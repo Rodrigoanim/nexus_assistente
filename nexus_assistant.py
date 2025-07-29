@@ -7,7 +7,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
-from agno.knowledge.pdf import PDFKnowledgeBase, PDFReader
+from agno.knowledge.text import TextKnowledgeBase
 from agno.vectordb.chroma import ChromaDb
 from agno.storage.sqlite import SqliteStorage
 
@@ -78,10 +78,9 @@ def initialize_nexus_knowledge():
         )
         
         # Configurar base de conhecimento com o manual NEXUS
-        knowledge = PDFKnowledgeBase(
+        knowledge = TextKnowledgeBase(
             path="Manual_Geral_Nexus_2021_formatado.md",
-            vector_db=vector_db,
-            reader=PDFReader(chunk=True, chunk_size=1000)
+            vector_db=vector_db
         )
         
         return knowledge
