@@ -1,0 +1,12 @@
+# Assessment DISC - Dependências para Deploy
+# Arquivo para instalação no Render.com
+
+agno>=1.7.6
+groq>=0.30.0
+python-dotenv>=1.1.1
+sqlalchemy>=2.0.41
+tavily-python>=0.7.10
+fastapi>=0.104.1
+uvicorn>=0.24.0
+streamlit>=1.32.0
+openai>=1.97.1 
