@@ -1,0 +1,54 @@
+# Cursor Rules - Framework Agno
+
+## 📚 Referência de Documentação
+
+Este projeto contém documentação completa do framework Agno na pasta `docs/`:
+
+- **Manual Completo**: `docs/docs_agno_com_introduction_complete_manual.md` (309 linhas)
+- **Página Individual**: `docs/docs_agno_com_introduction.md` (114 links)
+
+## 🎯 Diretrizes para Desenvolvimento
+
+### Ao trabalhar com Agno:
+1. **Sempre consulte** a documentação em `docs/` antes de implementar
+2. **Use o manual completo** para referência completa
+3. **Priorize as seções principais** (🔥) para implementações críticas
+4. **Consulte exemplos** nas seções 26-43 do manual
+
+### Estrutura de Prioridade:
+- **🔥 Principais**: Introduction, Agents, Teams, Models
+- **⚡ Importantes**: Tools, Reasoning, Knowledge, Storage  
+- **📚 Complementares**: Workflows, Evals, Examples, How-to
+
+### Seções Específicas:
+- **Agents**: Seções 76-91 do manual
+- **Teams**: Seções 92-100 do manual
+- **Models**: Seção 20 do manual
+- **Examples**: Seções 26-43 do manual
+- **Reference**: Seções 49-62 do manual
+
+## 🔍 Busca e Referência
+
+### Para encontrar informações:
+1. Use `Ctrl+F` no arquivo completo
+2. Busque por URLs específicas
+3. Consulte o índice no final do manual
+4. Use as estatísticas para navegação
+
+### Comandos úteis:
+- "Consulte o manual do Agno para [tópico]"
+- "Mostre exemplos de [funcionalidade] no Agno"
+- "Como implementar [recurso] usando Agno"
+
+## 📋 Boas Práticas
+
+1. **Sempre referencie** a documentação oficial
+2. **Use exemplos** do manual como base
+3. **Consulte a API** nas seções de referência
+4. **Mantenha atualizado** o manual quando necessário
+
+## 🔄 Atualização
+
+Para atualizar a documentação:
+```bash
+python url_to_markdown_complete.py "https://docs.agno.com/introduction"

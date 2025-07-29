@@ -174,25 +174,54 @@ def search_nexus_manual(query: str) -> str:
 
 # Inicializar base de conhecimento do NEXUS
 def initialize_nexus_knowledge():
-    """Inicializa a base de conhecimento do manual NEXUS"""
+    """Inicializa a base de conhecimento do manual NEXUS de forma automática e robusta"""
     try:
-        # Configurar banco de dados vetorial com configurações simples
-        vector_db = ChromaDb(
-            collection="nexus_manual_v4", 
-            path="tmp/nexus_chromadb"
-        )
-        
-        # Configurar leitor de texto com configurações padrão confiáveis
-        text_reader = TextReader(
-            chunk=True,
-            chunk_size=2000  # Chunks grandes para garantir conteúdo completo
-        )
+        # Garantir que diretório tmp existe
+        os.makedirs("tmp", exist_ok=True)
         
         # Verificar se o arquivo do manual existe
         manual_path = "Manual_Geral_Nexus_2021_formatado.md"
         if not os.path.exists(manual_path):
             st.error(f"❌ Arquivo do manual não encontrado: {manual_path}")
             return None
+        
+        # Debug: informações sobre o arquivo
+        file_size = os.path.getsize(manual_path)
+        print(f"# Debug - Arquivo manual: {manual_path}")
+        print(f"# Debug - Tamanho do arquivo: {file_size} bytes")
+        
+        # Verificar se o arquivo pode ser lido
+        try:
+            with open(manual_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                print(f"# Debug - Arquivo lido com sucesso: {len(content)} caracteres")
+                print(f"# Debug - Primeiros 200 caracteres: {content[:200]}...")
+        except Exception as read_e:
+            print(f"# Debug - Erro ao ler arquivo: {str(read_e)}")
+            st.error(f"❌ Erro ao ler arquivo do manual: {str(read_e)}")
+            return None
+        
+        # Garantir que a base seja criada limpa sempre
+        chroma_path = "tmp/nexus_chromadb"
+        if os.path.exists(chroma_path):
+            try:
+                shutil.rmtree(chroma_path)
+                print(f"# Debug - Diretório ChromaDB antigo removido")
+            except Exception as remove_e:
+                print(f"# Debug - Aviso: Não foi possível remover diretório antigo: {str(remove_e)}")
+        
+        # Configurar banco de dados vetorial sempre limpo
+        vector_db = ChromaDb(
+            collection="nexus_manual_auto", 
+            path=chroma_path
+        )
+        
+        # Configurar leitor de texto com configurações otimizadas
+        text_reader = TextReader(
+            chunk=True,
+            chunk_size=1500,  # Tamanho otimizado
+            separators=["\n\n", "\n", ". ", " "]  # Separadores hierárquicos
+        )
         
         # Configurar base de conhecimento com o manual NEXUS
         knowledge = TextKnowledgeBase(
@@ -201,40 +230,33 @@ def initialize_nexus_knowledge():
             reader=text_reader
         )
         
-        # Debug: informações sobre o arquivo
-        file_size = os.path.getsize(manual_path)
-        print(f"# Debug - Arquivo manual: {manual_path}")
-        print(f"# Debug - Tamanho do arquivo: {file_size} bytes")
+        # Forçar carregamento da base de conhecimento sempre limpa
+        print(f"# Debug - Carregando base de conhecimento (sempre nova)...")
+        knowledge.load(recreate=True)
+        print(f"# Debug - Base de conhecimento carregada com sucesso!")
         
-        # Forçar carregamento da base de conhecimento
+        # Verificar se documentos foram criados com timeout
         try:
-            print(f"# Debug - Carregando base de conhecimento...")
+            import time
+            time.sleep(1)  # Aguardar processamento
+            test_docs = vector_db.search("NEXUS", limit=3)
+            doc_count = len(test_docs) if test_docs else 0
+            print(f"# Debug - Teste de busca encontrou: {doc_count} documentos")
             
-            # Verificar se o arquivo pode ser lido
-            with open(manual_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-                print(f"# Debug - Arquivo lido com sucesso: {len(content)} caracteres")
-                print(f"# Debug - Primeiros 200 caracteres: {content[:200]}...")
-            
-            knowledge.load(recreate=True)
-            print(f"# Debug - Base de conhecimento carregada com sucesso!")
-            
-            # Verificar se documentos foram criados
-            try:
-                # Tentar uma busca simples para verificar se há documentos
-                test_docs = vector_db.search("NEXUS", limit=1)
-                print(f"# Debug - Teste de busca encontrou: {len(test_docs) if test_docs else 0} documentos")
-            except Exception as search_e:
-                print(f"# Debug - Erro ao testar busca: {str(search_e)}")
+            if doc_count == 0:
+                print(f"# Debug - Nenhum documento encontrado, tentando busca alternativa...")
+                # Tentar busca por termos diferentes
+                test_docs2 = vector_db.search("pontuação", limit=3)
+                doc_count2 = len(test_docs2) if test_docs2 else 0
+                print(f"# Debug - Busca alternativa encontrou: {doc_count2} documentos")
                 
-        except Exception as e:
-            print(f"# Debug - Erro ao carregar base: {str(e)}")
-            st.error(f"❌ Erro ao carregar base de conhecimento: {str(e)}")
-            return None
+        except Exception as search_e:
+            print(f"# Debug - Erro ao testar busca: {str(search_e)}")
         
         return knowledge
         
     except Exception as e:
+        print(f"# Debug - Erro geral ao inicializar base: {str(e)}")
         st.error(f"❌ Erro ao inicializar base de conhecimento: {str(e)}")
         return None
 
@@ -311,107 +333,85 @@ def main():
     if not check_api_keys():
         st.stop()
     
-    # Inicializar agente
+    # Inicializar agente sempre novo para garantir funcionamento
     with st.spinner("🔄 Inicializando assistente NEXUS..."):
-        if "nexus_agent" not in st.session_state:
+        # Sempre inicializar novo agente para garantir base atualizada
+        if "nexus_agent" not in st.session_state or st.session_state.get("force_reload", False):
+            print("# Debug - Inicializando novo agente...")
             st.session_state.nexus_agent = initialize_nexus_agent()
+            st.session_state.force_reload = False
         agent = st.session_state.nexus_agent
     
     if agent is None:
         st.error("❌ Não foi possível inicializar o assistente. Verifique as configurações.")
         st.stop()
     
-    st.success("✅ Assistente NEXUS inicializado com sucesso!")
+    # Verificação automática da base de conhecimento
+    auto_check_status = "🔄 Verificando"
+    try:
+        # Testar se a base está funcionando
+        if hasattr(agent, 'knowledge') and agent.knowledge:
+            # Teste simples da busca híbrida
+            test_results = search_manual_hybrid("pontuação")
+            if test_results:
+                auto_check_status = "✅ Base funcionando"
+                print(f"# Debug - Verificação automática: {len(test_results)} resultados encontrados")
+            else:
+                auto_check_status = "⚠️ Base vazia"
+                print(f"# Debug - Verificação automática: nenhum resultado encontrado")
+        else:
+            auto_check_status = "❌ Base não carregada"
+            print(f"# Debug - Verificação automática: base de conhecimento não carregada")
+    except Exception as check_e:
+        auto_check_status = "❌ Erro na verificação"
+        print(f"# Debug - Erro na verificação automática: {str(check_e)}")
     
-    # Opções de administração da base de conhecimento
-    col1, col2, col3, col4 = st.columns(4)
+    st.success(f"✅ Assistente NEXUS inicializado com sucesso! ({auto_check_status})")
     
-    with col1:
-        if st.button("🔄 Recarregar Base de Conhecimento"):
-            with st.spinner("🔄 Recarregando base de conhecimento..."):
-                try:
-                    # Limpar cache da sessão
-                    if "nexus_agent" in st.session_state:
-                        del st.session_state.nexus_agent
-                    
-                    knowledge = initialize_nexus_knowledge()
-                    if knowledge:
-                        st.success("✅ Base de conhecimento recarregada com sucesso!")
-                        st.info("💡 Configurações otimizadas aplicadas")
-                        st.rerun()
-                    else:
-                        st.error("❌ Erro ao recarregar base de conhecimento")
-                except Exception as e:
-                    st.error(f"❌ Erro ao recarregar: {str(e)}")
-    
-    with col2:
-        if st.button("🗄️ Recriar Base de Conhecimento"):
-            with st.spinner("🗄️ Recriando base de conhecimento do zero..."):
-                try:
-                    # Limpar cache da sessão
-                    if "nexus_agent" in st.session_state:
-                        del st.session_state.nexus_agent
-                    
-                    # Remover diretório ChromaDB para recriar do zero
-                    if os.path.exists("tmp/nexus_chromadb"):
-                        shutil.rmtree("tmp/nexus_chromadb")
-                        print("# Debug - Diretório ChromaDB removido")
-                    
-                    # Garantir que diretório tmp existe
-                    os.makedirs("tmp", exist_ok=True)
-                    
-                    knowledge = initialize_nexus_knowledge()
-                    if knowledge:
-                        st.success("✅ Base de conhecimento recriada completamente!")
-                        st.info("💡 Nova collection v4 criada com configurações simples")
-                        st.rerun()
-                    else:
-                        st.error("❌ Erro ao recriar base de conhecimento")
-                except Exception as e:
-                    st.error(f"❌ Erro ao recriar: {str(e)}")
-                    print(f"# Debug - Erro detalhado ao recriar: {str(e)}")
-    
-    with col3:
-        if st.button("🔍 Testar Base de Conhecimento"):
-            with st.spinner("🔍 Testando base de conhecimento..."):
-                try:
-                    # Tentar uma busca direta na base
-                    knowledge = initialize_nexus_knowledge()
-                    if knowledge and hasattr(knowledge, 'vector_db'):
-                        test_results = knowledge.vector_db.search("pontuação", limit=3)
-                        if test_results:
-                            st.success(f"✅ Encontrados {len(test_results)} documentos sobre pontuação")
-                            for i, doc in enumerate(test_results[:2]):
-                                st.text(f"Doc {i+1}: {doc.content[:100]}...")
-                        else:
-                            st.warning("⚠️ Base criada mas nenhum documento encontrado")
-                    else:
-                        st.error("❌ Não foi possível acessar a base de conhecimento")
-                except Exception as e:
-                    st.error(f"❌ Erro ao testar: {str(e)}")
-                    print(f"# Debug - Erro ao testar base: {str(e)}")
-    
-    with col4:
-        if st.button("🔍 Teste Busca Híbrida"):
-            with st.spinner("🔍 Testando busca híbrida..."):
-                try:
-                    # Testar busca híbrida diretamente
-                    test_query = "sistema de pontuação"
-                    results = search_manual_hybrid(test_query)
-                    
-                    if results:
-                        st.success(f"✅ Busca híbrida encontrou {len(results)} resultados")
-                        for i, result in enumerate(results[:2]):
-                            st.text(f"Fonte: {result['source']}")
-                            st.text(f"Relevância: {result['relevance']}")
-                            st.text(f"Conteúdo: {result['content'][:150]}...")
-                            st.divider()
-                    else:
-                        st.warning("⚠️ Busca híbrida não encontrou resultados")
+    # Opções de administração simplificadas (apenas para emergência)
+    with st.expander("🔧 Opções Avançadas (apenas se necessário)"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🔄 Forçar Reinicialização"):
+                with st.spinner("🔄 Forçando reinicialização completa..."):
+                    try:
+                        # Limpar completamente a sessão
+                        if "nexus_agent" in st.session_state:
+                            del st.session_state.nexus_agent
+                        if "chat_history" in st.session_state:
+                            del st.session_state.chat_history
                         
-                except Exception as e:
-                    st.error(f"❌ Erro na busca híbrida: {str(e)}")
-                    print(f"# Debug - Erro na busca híbrida: {str(e)}")
+                        # Marcar para recarregar
+                        st.session_state.force_reload = True
+                        
+                        st.success("✅ Reinicialização forçada. Recarregando...")
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"❌ Erro ao reinicializar: {str(e)}")
+        
+        with col2:
+            if st.button("🔍 Teste Busca Híbrida"):
+                with st.spinner("🔍 Testando busca híbrida..."):
+                    try:
+                        # Testar busca híbrida diretamente
+                        test_query = "sistema de pontuação"
+                        results = search_manual_hybrid(test_query)
+                        
+                        if results:
+                            st.success(f"✅ Busca híbrida encontrou {len(results)} resultados")
+                            for i, result in enumerate(results[:2]):
+                                st.text(f"Fonte: {result['source']}")
+                                st.text(f"Relevância: {result['relevance']}")
+                                st.text(f"Conteúdo: {result['content'][:150]}...")
+                                st.divider()
+                        else:
+                            st.warning("⚠️ Busca híbrida não encontrou resultados")
+                            
+                    except Exception as e:
+                        st.error(f"❌ Erro na busca híbrida: {str(e)}")
+                        print(f"# Debug - Erro na busca híbrida: {str(e)}")
     
     # Interface de chat estilo WhatsApp com scroll
     st.markdown("---")
@@ -541,30 +541,24 @@ def main():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("""
-        <div style='background-color:#f0f0f0;padding:10px;border-radius:5px;'>
-            <h4>📋 Sobre Membros</h4>
-            <ul>
-                <li>Quais são os requisitos para ser membro?</li>
-                <li>Como funciona o sistema de pontuação?</li>
-                <li>Quais são as regras de exclusividade?</li>
-                <li>Como funciona a suspensão de cadeira?</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.info("""
+        **📋 Sobre Membros**
+        
+        - Quais são os requisitos para ser membro?
+        - Como funciona o sistema de pontuação?
+        - Quais são as regras de exclusividade?
+        - Como funciona a suspensão de cadeira?
+        """)
     
     with col2:
-        st.markdown("""
-        <div style='background-color:#f0f0f0;padding:10px;border-radius:5px;'>
-            <h4>🤝 Sobre Contribuições</h4>
-            <ul>
-                <li>Como funcionam as RDNs?</li>
-                <li>Como registrar indicações de negócios?</li>
-                <li>Como funciona o sistema de convidados?</li>
-                <li>Como registrar negócios fechados?</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.info("""
+        **🤝 Sobre Contribuições**
+        
+        - Como funcionam as RDNs?
+        - Como registrar indicações de negócios?
+        - Como funciona o sistema de convidados?
+        - Como registrar negócios fechados?
+        """)
     
     # Informações sobre o NEXUS
     st.markdown("---")
