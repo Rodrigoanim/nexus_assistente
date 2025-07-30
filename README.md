@@ -1,10 +1,13 @@
-# 🌍 Assessment DISC - Equipe Multi-idioma
+# 📚 Assistente NEXUS - Manual Inteligente
 
-Sistema de roteamento inteligente para respostas em múltiplos idiomas usando OpenAI e Streamlit.
+Sistema inteligente de assistente especializado no manual do NEXUS - Fábrica de Negócios usando OpenAI e Streamlit.
 
 ## 🚀 Funcionalidades
 
-- **Roteamento Multi-idioma**: Suporte para Inglês, Chinês e Francês
+- **Busca Ultra-Precisa**: 50+ seções específicas mapeadas do manual NEXUS
+- **Português Impecável**: Respostas com gramática rigorosa e linguagem empresarial
+- **Informações Completas**: Extração integral de informações, não fragmentos
+- **Relevância Inteligente**: Sistema avançado de cálculo de relevância
 - **Interface Web**: Interface amigável com Streamlit
 - **Segurança**: Configuração segura de chaves API
 - **Deploy Automático**: Configuração para Render.com
@@ -49,11 +52,11 @@ DEBUG=True
 
 ### 4. Execute a aplicação
 ```bash
-# Aplicação principal (Streamlit)
-uv run streamlit run main_app.py
+# Assistente NEXUS (Streamlit)
+uv run streamlit run nexus_assistant.py
 
-# Teste da equipe multi-idioma
-uv run 41_teams.py
+# Ou usando pip
+streamlit run nexus_assistant.py
 ```
 
 ## 🌐 Deploy no Render.com
@@ -61,10 +64,12 @@ uv run 41_teams.py
 ### 1. Preparação do Repositório
 
 Certifique-se de que os seguintes arquivos estão no repositório:
-- ✅ `main_app.py` (aplicação principal)
+- ✅ `nexus_assistant.py` (aplicação principal)
+- ✅ `Manual_Geral_Nexus_2021_formatado.md` (base de conhecimento)
 - ✅ `requirements.txt` (dependências)
 - ✅ `render.yaml` (configuração do Render)
 - ✅ `.gitignore` (proteção de arquivos sensíveis)
+- ✅ `env.example` (exemplo de variáveis de ambiente)
 
 ### 2. Configuração no Render.com
 
@@ -72,7 +77,7 @@ Certifique-se de que os seguintes arquivos estão no repositório:
 2. **Conecte seu repositório GitHub**
 3. **Crie um novo Web Service**
 4. **Configure as variáveis de ambiente**:
-   - `OPENAI_API_KEY`: Sua chave OpenAI
+   - `OPENAI_API_KEY`: Sua chave OpenAI (OBRIGATÓRIO)
    - `TAVILY_API_KEY`: Sua chave Tavily (opcional)
    - `ENVIRONMENT`: production
    - `DEBUG`: false
