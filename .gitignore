@@ -15,7 +15,6 @@ wheels/
 .env.production
 
 # Database files
-*.db
 tpm/
 tmp/
 
