@@ -189,7 +189,7 @@ def show_resultados_adm():
                                 st.rerun()
                         else:
                             st.warning("⚠️ **Status:** Usuário ainda não realizou análises DISC")
-                            st.info("💡 **Orientação:** Este usuário precisa completar as avaliações de perfil e comportamento primeiro.")
+                            st.info("💡 **Orientação:** Este usuário precisa completar as avaliações de Âncoras P1 e P2 primeiro.")
         
         # Tabela resumo (opcional, pode ser colocada em um expander)
         with st.expander("📋 **Ver todos os usuários cadastrados**", expanded=False):

@@ -1,7 +1,8 @@
 # Arquivo: create_forms.py
-# Data: 10/09/2025 - 11:00
+# Data: 09/10/2025 - 21:00
 # Tabelas: forms_tab, usuarios
-# Programa roda direto no Python 
+# Programa roda direto no Python
+# tab usuarios - coluna 'idioma' incluída com valor padrão 'pt'
 
 import sqlite3
 import os
@@ -347,7 +348,7 @@ def check_database():
         messagebox.showerror(
             "Erro",
             "Pasta 'data' não encontrada. O programa não pode continuar.\n"
-            "Por favor, crie a pasta 'data' e coloque o arquivo calcrh.db nela."
+            "Por favor, crie a pasta 'data' e coloque o arquivo calcrh2.db nela."
         )
         sys.exit(1)
         
@@ -356,7 +357,7 @@ def check_database():
         messagebox.showerror(
             "Erro",
             "Banco de dados não encontrado.\n"
-            "Por favor, verifique se o arquivo calcrh.db está na pasta data."
+            "Por favor, verifique se o arquivo calcrh2.db está na pasta data."
         )
         sys.exit(1)
 
@@ -633,7 +634,7 @@ def create_database_usuarios():
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
 
-        # Cria tabela usuarios com estrutura atualizada incluindo user_id
+        # Cria tabela usuarios com estrutura atualizada incluindo user_id e idioma
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS usuarios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -642,7 +643,8 @@ def create_database_usuarios():
                 email TEXT UNIQUE NOT NULL,
                 senha TEXT NOT NULL,
                 perfil TEXT NOT NULL,
-                empresa TEXT
+                empresa TEXT,
+                idioma TEXT DEFAULT 'pt'
             );
         """)
 
@@ -672,15 +674,16 @@ def create_database_usuarios():
             for _, row in df.iterrows():
                 try:
                     cursor.execute("""
-                        INSERT INTO usuarios (user_id, nome, email, senha, perfil, empresa)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT INTO usuarios (user_id, nome, email, senha, perfil, empresa, idioma)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     """, (
                         int(row['user_id']),
                         str(row['nome']).strip(),
                         str(row['email']).strip(),
                         str(row['senha']).strip(),
                         str(row['perfil']).strip(),
-                        str(row['empresa']).strip() if 'empresa' in row else None
+                        str(row['empresa']).strip() if 'empresa' in row else None,
+                        str(row['idioma']).strip() if 'idioma' in row and pd.notna(row['idioma']) else 'pt'
                     ))
                     print(f"Usuário inserido: {row['nome']}")
                 except Exception as e:

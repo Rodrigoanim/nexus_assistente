@@ -137,10 +137,10 @@ def date_to_days(date_str):
         return 0
 
 def get_element_value(cursor, name_element, element=None):
-    """Busca o valor de um elemento na tabela forms_tab."""
+    """Busca o valor de um elemento na tabela forms_tab_03."""
     cursor.execute("""
         SELECT value_element 
-        FROM forms_tab 
+        FROM forms_tab_03 
         WHERE name_element = ? AND user_id = ?
     """, (name_element, st.session_state.user_id))
     result = cursor.fetchone()
@@ -259,7 +259,7 @@ def calculate_formula(formula, values, cursor):
                 # Busca as datas no banco
                 cursor.execute("""
                     SELECT str_element 
-                    FROM forms_tab 
+                    FROM forms_tab_03 
                     WHERE name_element = ? AND user_id = ?
                 """, (data_final, st.session_state.user_id))
                 result = cursor.fetchone()
@@ -267,7 +267,7 @@ def calculate_formula(formula, values, cursor):
                 
                 cursor.execute("""
                     SELECT str_element 
-                    FROM forms_tab 
+                    FROM forms_tab_03 
                     WHERE name_element = ? AND user_id = ?
                 """, (data_inicial, st.session_state.user_id))
                 result = cursor.fetchone()
@@ -293,7 +293,7 @@ def calculate_formula(formula, values, cursor):
             placeholders = ','.join(['?'] * len(cell_refs))
             cursor.execute(f"""
                 SELECT name_element, value_element 
-                FROM forms_tab 
+                FROM forms_tab_03 
                 WHERE name_element IN ({placeholders}) AND user_id = ?
             """, cell_refs + [st.session_state.user_id])
             
@@ -343,7 +343,7 @@ def condicaoH(cursor, element, conn):
         # 2. Busca str_element da referência
         cursor.execute("""
             SELECT str_element 
-            FROM forms_tab 
+            FROM forms_tab_03 
             WHERE name_element = ? AND user_id = ?
         """, (math_ref, st.session_state.user_id))
         
@@ -378,7 +378,7 @@ def condicaoH(cursor, element, conn):
                 
                 # 4. Atualiza o banco
                 cursor.execute("""
-                    UPDATE forms_tab 
+                    UPDATE forms_tab_03 
                     SET value_element = ?
                     WHERE name_element = ? AND user_id = ?
                 """, (valor_encontrado, name_element, st.session_state.user_id))
@@ -447,13 +447,13 @@ def new_user(cursor, user_id):
     try:
         # Verifica se já existem registros para o usuário
         cursor.execute("""
-            SELECT COUNT(*) FROM forms_tab WHERE user_id = ?
+            SELECT COUNT(*) FROM forms_tab_03 WHERE user_id = ?
         """, (user_id,))
         
         if cursor.fetchone()[0] == 0:  # Se não existem registros
             # Copia todos os dados do user_id 0
             cursor.execute("""
-                INSERT INTO forms_tab (
+                INSERT INTO forms_tab_03 (
                     name_element, type_element, math_element, msg_element,
                     value_element, select_element, str_element, e_col, e_row,
                     section, col_len, user_id
@@ -462,7 +462,7 @@ def new_user(cursor, user_id):
                     name_element, type_element, math_element, msg_element,
                     value_element, select_element, str_element, e_col, e_row,
                     section, col_len, ? as user_id
-                FROM forms_tab 
+                FROM forms_tab_03 
                 WHERE user_id = 0
             """, (user_id,))
             
@@ -493,9 +493,9 @@ def _reset_rerun_locks(section):
         # Se houver erro, não afeta o funcionamento principal
         pass
 
-def process_forms_tab(section='ancoras_p1'):
+def process_forms_tab_03(section='ancoras_p1'):
     """
-    Processa registros da tabela forms_tab e exibe em layout de grade.
+    Processa registros da tabela forms_tab_03 e exibe em layout de grade.
     Versão otimizada com controle de st.rerun().
     
     Args:
@@ -563,7 +563,7 @@ def process_forms_tab(section='ancoras_p1'):
             SELECT name_element, type_element, math_element, msg_element,
                    value_element, select_element, str_element, e_col, e_row,
                    col_len
-            FROM forms_tab
+            FROM forms_tab_03
             WHERE user_id = ? AND section = ?
             ORDER BY e_row, e_col
         """, (user_id, section))
@@ -654,7 +654,7 @@ def process_forms_tab(section='ancoras_p1'):
                                 # Atualiza o banco com o resultado
                                 if type_elem in ['condicaoH', 'call_insumosH']:
                                     cursor.execute("""
-                                        UPDATE forms_tab 
+                                        UPDATE forms_tab_03 
                                         SET value_element = ? 
                                         WHERE name_element = ? AND user_id = ?
                                     """, (result, name, st.session_state.user_id))
@@ -690,7 +690,7 @@ def process_forms_tab(section='ancoras_p1'):
                                     try:
                                         # Atualiza o próprio selectbox
                                         cursor.execute("""
-                                            UPDATE forms_tab 
+                                            UPDATE forms_tab_03 
                                             SET str_element = ?,
                                                 value_element = ?
                                             WHERE name_element = ? 
@@ -700,7 +700,7 @@ def process_forms_tab(section='ancoras_p1'):
                                         
                                         # Busca elementos condicaoH que dependem deste selectbox
                                         cursor.execute("""
-                                            SELECT * FROM forms_tab 
+                                            SELECT * FROM forms_tab_03 
                                             WHERE type_element = 'condicaoH' 
                                             AND math_element = ? 
                                             AND user_id = ?
@@ -807,7 +807,7 @@ def process_forms_tab(section='ancoras_p1'):
                                             
                                             # Atualiza banco
                                             cursor.execute("""
-                                                UPDATE forms_tab 
+                                                UPDATE forms_tab_03 
                                                 SET value_element = ? 
                                                 WHERE name_element = ? AND user_id = ?
                                             """, (numeric_value, name, st.session_state.user_id))
@@ -820,7 +820,7 @@ def process_forms_tab(section='ancoras_p1'):
                                         else:
                                             # Atualiza apenas o session_state sem rerun
                                             cursor.execute("""
-                                                UPDATE forms_tab 
+                                                UPDATE forms_tab_03 
                                                 SET value_element = ? 
                                                 WHERE name_element = ? AND user_id = ?
                                             """, (numeric_value, name, st.session_state.user_id))
@@ -846,7 +846,7 @@ def process_forms_tab(section='ancoras_p1'):
                                 
                                 # 3. Atualiza o banco com UPDATE direto
                                 cursor.execute("""
-                                    UPDATE forms_tab 
+                                    UPDATE forms_tab_03 
                                     SET value_element = ? 
                                     WHERE name_element = ? AND user_id = ?
                                 """, (result, name, st.session_state.user_id))
@@ -901,7 +901,7 @@ def process_forms_tab(section='ancoras_p1'):
                                                     not st.session_state.get(rerun_key, False)):
                                                     
                                                     cursor.execute("""
-                                                        UPDATE forms_tab 
+                                                        UPDATE forms_tab_03 
                                                         SET str_element = ?,
                                                             value_element = ? 
                                                         WHERE name_element = ? AND user_id = ?
@@ -915,7 +915,7 @@ def process_forms_tab(section='ancoras_p1'):
                                                 else:
                                                     # Atualiza apenas o banco sem rerun
                                                     cursor.execute("""
-                                                        UPDATE forms_tab 
+                                                        UPDATE forms_tab_03 
                                                         SET str_element = ?,
                                                             value_element = ? 
                                                         WHERE name_element = ? AND user_id = ?
@@ -956,14 +956,14 @@ def call_insumos(cursor, element):
         float: Valor numérico encontrado ou 0.0 em caso de erro
     """
     try:
-        name = element[0]  # name_element da forms_tab
-        str_value = element[6]  # str_element da forms_tab (ex: 'InsumosI15')
+        name = element[0]  # name_element da forms_tab_03
+        str_value = element[6]  # str_element da forms_tab_03 (ex: 'InsumosI15')
         
         # Verifica se há uma referência válida
         if not str_value:
             return 0.0
             
-        # Busca o math_element na forms_insumos onde name_element = str_value da forms_tab
+        # Busca o math_element na forms_insumos onde name_element = str_value da forms_tab_03
         cursor.execute("""
             SELECT math_element 
             FROM forms_insumos 
@@ -994,7 +994,7 @@ def call_insumos(cursor, element):
             final_value_br = f"{final_value:.2f}".replace('.', ',')
             
             cursor.execute("""
-                UPDATE forms_tab 
+                UPDATE forms_tab_03 
                 SET value_element = ?
                 WHERE name_element = ? AND user_id = ?
             """, (final_value_br, name, st.session_state.user_id))
@@ -1011,5 +1011,12 @@ def call_insumos(cursor, element):
     except Exception as e:
         st.error(f"Erro inesperado ao processar referência: {str(e)}")
         return 0.0
+
+def process_forms_tab(section='ancoras_p1'):
+    """
+    Função wrapper para compatibilidade com main.py
+    Chama process_forms_tab_03 com a seção especificada
+    """
+    return process_forms_tab_03(section)
 
 

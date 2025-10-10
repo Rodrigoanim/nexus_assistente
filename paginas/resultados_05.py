@@ -1,7 +1,7 @@
 # resultados.py
 # Data: 01/08/2025 - 22h00
 # Pagina de resultados e Analises - Dashboard.
-# Tabela: forms_resultados
+# Tabela: forms_resultados_05
 
 try:
     import reportlab
@@ -38,19 +38,11 @@ from config import DB_PATH  # Adicione esta importação
 
 # Dicionário de títulos para cada tabela
 TITULOS_TABELAS = {
-    "forms_resultados_01": "Análise: DISC 10 Perguntas",
-    "forms_resultados_02": "Análise: DISC 20 Perguntas", 
-    "forms_resultados_03": "Análise: Âncoras de Carreira",
-    "forms_resultados_04": "Análise: Armadilhas do Empresário",
     "forms_resultados_05": "Análise: Anamnese Completa"
 }
 
 # Dicionário de subtítulos para cada tabela
 SUBTITULOS_TABELAS = {
-    "forms_resultados_01": "Avaliação DISC 10 Perguntas",
-    "forms_resultados_02": "Avaliação DISC 20 Perguntas",
-    "forms_resultados_03": "Avaliação de Âncoras de Carreira",
-    "forms_resultados_04": "Avaliação de Armadilhas do Empresário", 
     "forms_resultados_05": "Avaliação de Anamnese Completa"
 }
 
@@ -212,7 +204,7 @@ def new_user(cursor, user_id: int, tabela: str):
 
 def call_dados(cursor, element, tabela_destino: str):
     """
-    Busca dados na tabela forms_tab e atualiza o value_element do registro atual.
+    Busca dados na tabela forms_tab_05 e atualiza o value_element do registro atual.
     
     Args:
         cursor: Cursor do banco de dados
@@ -229,7 +221,7 @@ def call_dados(cursor, element, tabela_destino: str):
             # Busca o valor com CAST para garantir precisão decimal
             cursor.execute("""
                 SELECT CAST(value_element AS DECIMAL(20, 8))
-                FROM forms_tab 
+                FROM forms_tab_05 
                 WHERE name_element = ? 
                 AND user_id = ?
                 ORDER BY ID_element DESC
@@ -251,7 +243,7 @@ def call_dados(cursor, element, tabela_destino: str):
                 
                 cursor.connection.commit()
             else:
-                st.warning(f"Valor não encontrado na tabela forms_tab para {str_value} (user_id: {user_id})")
+                st.warning(f"Valor não encontrado na tabela forms_tab_05 para {str_value} (user_id: {user_id})")
                 
     except Exception as e:
         st.error(f"Erro ao processar call_dados: {str(e)}")
@@ -322,7 +314,7 @@ def grafico_barra(cursor, element):
             valor = result[0] if result and result[0] is not None else 0.0
             valores.append(valor)
         
-        # Sistema exclusivo para Âncoras de Carreira - Cores do prisma/espectro
+        # Sistema exclusivo para Anamnese Completa - Cores do prisma/espectro
         cores_ancoras = {
             'C31': '#FF0000',  # Vermelho - Competência Técnica
             'C32': '#FF8C00',  # Laranja - Gestão Geral  
@@ -402,9 +394,9 @@ def grafico_barra(cursor, element):
     except Exception as e:
         st.error(f"Erro ao criar gráfico: {str(e)}")
 
-def tabela_dados(cursor, element, tabela_escolhida):
+def tabela_dados(cursor, element):
     """
-    Cria uma tabela estilizada com dados da tabela especificada.
+    Cria uma tabela estilizada com dados da tabela forms_resultados_05.
     Tabela transposta (vertical) com valores em vez de nomes.
     
     Args:
@@ -455,9 +447,9 @@ def tabela_dados(cursor, element, tabela_escolhida):
         
         # Busca os valores para cada type_name
         for type_name in type_names:
-            cursor.execute(f"""
+            cursor.execute("""
                 SELECT value_element 
-                FROM {tabela_escolhida} 
+                FROM forms_resultados_05 
                 WHERE name_element = ? 
                 AND user_id = ?
                 ORDER BY ID_element DESC
@@ -584,7 +576,7 @@ def gerar_dados_grafico(cursor, elemento, tabela_escolhida: str, height_pct=100,
             valor = float(result[0]) if result and result[0] is not None else 0.0
             valores.append(valor)
         
-        # Sistema exclusivo para Âncoras de Carreira - Cores do prisma/espectro
+        # Sistema exclusivo para Anamnese Completa - Cores do prisma/espectro
         cores_ancoras = {
             'C31': '#FF0000',  # Vermelho - Competência Técnica
             'C32': '#FF8C00',  # Laranja - Gestão Geral  
@@ -892,7 +884,7 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
             )
 
             # Título principal
-            titulo_principal = TITULOS_TABELAS.get(tabela_escolhida, "Análise de Âncoras de Carreira")
+            titulo_principal = TITULOS_TABELAS.get(tabela_escolhida, "Análise de Anamnese Completa")
             elements.append(Paragraph(titulo_principal, title_style))
             elements.append(Spacer(1, 20))
 
@@ -930,9 +922,9 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
             ranking_ancoras_pdf = []
             for codigo in mapeamento_ancoras_pdf.keys():
                 # Usar mesma lógica da função da tela que funciona
-                pdf_cursor.execute(f"""
+                pdf_cursor.execute("""
                     SELECT value_element 
-                    FROM {tabela_escolhida} 
+                    FROM forms_resultados_05 
                     WHERE name_element = ? 
                     AND user_id = ?
                     ORDER BY ID_element DESC
@@ -1503,8 +1495,8 @@ def show_results(tabela_escolhida: str, titulo_pagina: str, user_id: int):
                                 elif element[1] == 'call_dados':
                                     call_dados(cursor, element, tabela_escolhida)
         
-        # 5. Gerar e exibir análise de Âncoras de Carreira
-        with st.expander("Clique aqui para ver sua Análise de Âncoras de Carreira", expanded=False):
+        # 5. Gerar e exibir análise de Anamnese Completa
+        with st.expander("Clique aqui para ver sua Análise de Anamnese Completa", expanded=False):
             st.markdown("---")
             
             # Chama a função que gera e exibe a análise de âncoras
@@ -1595,12 +1587,12 @@ def tabela_dados_sem_titulo(cursor, element):
     except Exception as e:
         st.error(f"Erro ao criar tabela: {str(e)}")
 
-# Função DISC removida - Sistema agora é exclusivo para Âncoras de Carreira
+# Função DISC removida - Sistema agora é exclusivo para Anamnese Completa
 
-# FUNÇÕES DISC REMOVIDAS - Sistema agora exclusivo para Âncoras de Carreira
+# FUNÇÕES DISC REMOVIDAS - Sistema agora exclusivo para Anamnese Completa
 # As funções analisar_perfil_disc_streamlit() e analisar_perfil_disc() foram removidas
 # def analisar_perfil_disc(cursor, user_id):  # FUNÇÃO REMOVIDA
-    # FUNÇÃO DISC REMOVIDA - Sistema agora é exclusivo para Âncoras de Carreira
+    # FUNÇÃO DISC REMOVIDA - Sistema agora é exclusivo para Anamnese Completa
     pass
 
 # ===============================================================
@@ -1622,15 +1614,15 @@ def parse_br_number(value_str):
     except:
         return 0.0
 
-# Sistema refatorado - agora exclusivo para Âncoras de Carreira
+# Sistema refatorado - agora exclusivo para Anamnese Completa
 
-def buscar_valor_ancora(cursor, user_id, name_element, tabela_escolhida):
+def buscar_valor_ancora(cursor, user_id, name_element):
     """
-    Busca valor específico de uma âncora na tabela especificada
+    Busca valor específico de uma âncora na tabela forms_resultados_05
     """
     try:
-        cursor.execute(f"""
-            SELECT value_element FROM {tabela_escolhida}
+        cursor.execute("""
+            SELECT value_element FROM forms_resultados_05
             WHERE user_id = ? AND name_element = ?
             LIMIT 1
         """, (user_id, name_element))
@@ -1647,7 +1639,7 @@ def buscar_valor_ancora(cursor, user_id, name_element, tabela_escolhida):
 
 def analisar_ancoras_carreira_streamlit(cursor, user_id):
     """
-    Análise de Âncoras de Carreira com RANKING UNIFICADO
+    Análise de Anamnese Completa com RANKING UNIFICADO
     Combina valores P1 e P2 para criar ranking das 8 âncoras
     """
     try:
@@ -1713,17 +1705,17 @@ def analisar_ancoras_carreira_streamlit(cursor, user_id):
         }
         
         # 3. Buscar valores das âncoras para criar ranking
-        # USAR TABELA ESPECÍFICA: tabela_escolhida
-        tabela = tabela_escolhida
+        # USAR TABELA ESPECÍFICA: forms_resultados_05
+        tabela = 'forms_resultados_05'
         
         codigos_ancoras = list(mapeamento_ancoras.keys())
         ranking_ancoras = []
         
         for codigo in codigos_ancoras:
             # Usar a mesma lógica da função tabela_dados que funciona
-            cursor.execute(f"""
+            cursor.execute("""
                 SELECT value_element 
-                FROM {tabela_escolhida} 
+                FROM forms_resultados_05 
                 WHERE name_element = ? 
                 AND user_id = ?
                 ORDER BY ID_element DESC
@@ -1752,7 +1744,7 @@ def analisar_ancoras_carreira_streamlit(cursor, user_id):
         valores_validos = [a for a in ranking_ancoras if a['valor_total'] > 0]
         
         if len(valores_validos) < 3:
-            st.markdown("## ⚠️ Análise de Âncoras de Carreira não disponível")
+            st.markdown("## ⚠️ Análise de Anamnese Completa não disponível")
             st.markdown("### 👤 Informações do Usuário:")
             if usuario_info:
                 st.markdown(f"**Nome:** {usuario_info[0] or 'Não informado'}")
@@ -1761,11 +1753,11 @@ def analisar_ancoras_carreira_streamlit(cursor, user_id):
             st.markdown(f"**Problema:** Dados insuficientes. Encontrados apenas {len(valores_validos)} âncoras com valores.")
             st.markdown("**Solução:** Complete as avaliações de Âncoras P1 e P2 para gerar os resultados.")
             st.markdown("---")
-            st.info("💡 **Informação:** Este sistema analisa exclusivamente Âncoras de Carreira, oferecendo uma avaliação completa das suas motivações e valores profissionais.")
+            st.info("💡 **Informação:** Este sistema analisa exclusivamente Anamnese Completa, oferecendo uma avaliação completa das suas motivações e valores profissionais.")
             return
         
         # 6. EXIBIR ANÁLISE COMPLETA
-        st.markdown("## ⚓ Análise de Âncoras de Carreira")
+        st.markdown("## ⚓ Análise de Anamnese Completa")
         
         # Informações do usuário
         if usuario_info:
@@ -1781,7 +1773,7 @@ def analisar_ancoras_carreira_streamlit(cursor, user_id):
             st.markdown(info_html, unsafe_allow_html=True)
         
         # 7. RANKING COMPLETO DAS 8 ÂNCORAS
-        st.markdown("### 🏆 Ranking Completo das Âncoras de Carreira")
+        st.markdown("### 🏆 Ranking Completo das Anamnese Completa")
         st.markdown("*Valores das âncoras de carreira*")
         
         # Preparar dados para tabela
@@ -1896,7 +1888,7 @@ def analisar_ancoras_carreira_streamlit(cursor, user_id):
         st.markdown(info_perfil_html, unsafe_allow_html=True)
         
         # 10. EXIBIR ANÁLISE DETALHADA - NOVA LÓGICA
-        st.markdown("## 📖 Análise das suas Âncoras de Carreira")
+        st.markdown("## 📖 Análise das suas Anamnese Completa")
         
         # 10.1 SEMPRE CARREGAR ABERTURA PRIMEIRO
         arquivo_abertura = 'Conteudo/A0_Abertura_Devolutiva.md'
@@ -1984,7 +1976,7 @@ def analisar_ancoras_carreira_streamlit(cursor, user_id):
         st.markdown(resumo_html, unsafe_allow_html=True)
         
     except Exception as e:
-        st.error(f"❌ **Erro na análise de Âncoras de Carreira:** {str(e)}")
+        st.error(f"❌ **Erro na análise de Anamnese Completa:** {str(e)}")
         import traceback
         st.error(f"**Detalhes técnicos:** {traceback.format_exc()}")
 
