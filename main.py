@@ -1,4 +1,4 @@
-# Data: 09/10/2025 - Hora: 19:00
+# Data: 14/10/2025 - Hora: 19:00
 # IDE Cursor - Auto Agent
 # uv run streamlit run main.py
 # Plataforma com varios assessments
@@ -1041,7 +1041,7 @@ def show_admin_menu():
     
     if not is_admin:
         st.info("ℹ️ **Acesso limitado:** Algumas funções administrativas não estão disponíveis para seu perfil.")
-        st.info("🔐 **Disponível para todos:** Trocar Senha e Zerar Valores")
+        st.info("🔐 **Disponível para todos:** Trocar Senha")
     else:
         st.success("✅ **Acesso completo:** Todas as funções administrativas estão disponíveis.")
     
@@ -1084,14 +1084,11 @@ def show_admin_menu():
         if st.button("🔐 Trocar Senha", use_container_width=True):
             st.session_state["admin_function"] = "Trocar Senha"
     
-    with col2:
-        if st.button("🗑️ Zerar Valores", use_container_width=True):
-            st.session_state["admin_function"] = "Zerar Valores"
     
     # Processar função administrativa selecionada
     admin_function = st.session_state.get("admin_function")
     if admin_function == "Análise de Usuários" and is_admin:
-        show_analysis_with_admin_controls()
+        show_resultados_adm()
     elif admin_function == "CRUD - Gerenciar Dados" and is_admin:
         show_crud()
     elif admin_function == "Monitor de Uso" and is_admin:
@@ -1102,8 +1099,6 @@ def show_admin_menu():
         controlar_cadastro_usuarios()
     elif admin_function == "Trocar Senha":
         trocar_senha()
-    elif admin_function == "Zerar Valores":
-        zerar_value_element()
 
 def get_timezone_offset():
     """
@@ -1286,6 +1281,7 @@ def show_analysis_with_admin_controls():
                 # Limpar dados administrativos
                 st.session_state.pop("admin_view_user_id", None)
                 st.session_state.pop("admin_view_user_name", None)
+                st.session_state.pop("admin_selected_assessment", None)
                 
                 # Definir flag para retornar ao módulo administrativo
                 st.session_state["return_to_admin"] = True
@@ -1293,12 +1289,28 @@ def show_analysis_with_admin_controls():
         
         st.markdown("---")
         
-        # Exibir análise do usuário selecionado
-        show_results(
-            tabela_escolhida="forms_resultados_03", 
-            titulo_pagina=get_texto('main_039', 'Análise Administrativa - {usuario}').format(usuario=admin_user_name), 
-            user_id=admin_user_id
-        )
+        # Verificar se há um assessment específico selecionado
+        selected_assessment = st.session_state.get("admin_selected_assessment")
+        
+        if selected_assessment:
+            # Mostrar análise do assessment específico selecionado
+            try:
+                # Carregar módulo do assessment selecionado
+                process_forms_tab, show_results, assessment_name = load_assessment_module(selected_assessment)
+                
+                if show_results:
+                    tabela_escolhida = f"forms_resultados_{selected_assessment}"
+                    titulo_pagina = f"Análise Administrativa - {admin_user_name} - {assessment_name}"
+                    show_results(tabela_escolhida, titulo_pagina, admin_user_id)
+                else:
+                    st.error("❌ **Erro:** Não foi possível carregar o módulo de resultados.")
+            except Exception as e:
+                st.error(f"❌ **Erro ao carregar análise:** {str(e)}")
+        else:
+            # Se não há assessment selecionado, mostrar mensagem
+            st.warning("⚠️ **Nenhum assessment selecionado.**")
+            st.info("💡 **Orientação:** Volte ao módulo administrativo e selecione um assessment específico para visualizar.")
+    
     else:
         # Visualização normal do próprio usuário
         assessment_id = st.session_state.get("selected_assessment_id")
@@ -1319,56 +1331,6 @@ def show_analysis_with_admin_controls():
         
         show_results(tabela_escolhida, titulo_pagina, current_user_id)
 
-def zerar_value_element():
-    """Função para zerar todos os value_element do usuário logado na tabela forms_tab onde type_element é input, formula ou formulaH"""
-    # Inicializa o estado do checkbox se não existir
-    if 'confirma_zeragem' not in st.session_state:
-        st.session_state.confirma_zeragem = False
-    
-    # Checkbox para confirmação
-    confirma = st.checkbox(get_texto('main_032', 'Confirmar zeragem dos valores?'), 
-                                 value=st.session_state.confirma_zeragem,
-                                 key='confirma_zeragem')
-    
-    if st.button(get_texto('main_033', 'Zerar Valores')):
-        if confirma:
-            try:
-                conn = sqlite3.connect(DB_PATH)
-                cursor = conn.cursor()
-                
-                # Atualiza value_element para 0.0 para os tipos especificados
-                cursor.execute("""
-                    UPDATE forms_tab 
-                    SET value_element = 0.0 
-                    WHERE user_id = ? 
-                    AND value_element IS NOT NULL
-                    AND type_element IN ('input', 'formula', 'formulaH', 'selectbox')
-                """, (st.session_state["user_id"],))
-                
-                registros_afetados = cursor.rowcount
-                
-                conn.commit()
-                conn.close()
-                
-                # Registra a ação no monitor
-                registrar_acesso(
-                    user_id=st.session_state["user_id"],
-                    programa="main.py",
-                    acao="zerar_valores"
-                )
-                
-                st.success(get_texto('main_035', 'Valores zerados com sucesso! ({registros} registros atualizados)').format(registros=registros_afetados))
-                
-                # Força a atualização da página após 1 segundo
-                time.sleep(1)
-                st.rerun()
-                
-            except Exception as e:
-                st.error(get_texto('main_036', 'Erro ao zerar valores: {erro}').format(erro=str(e)))
-                if 'conn' in locals():
-                    conn.close()
-        else:
-            st.warning(get_texto('main_034', 'Confirme a operação para prosseguir'))
 
 def main():
     """Gerencia a navegação entre as páginas do sistema."""
@@ -1458,6 +1420,13 @@ def main():
         st.session_state["return_to_admin"] = False
         # Exibir módulo administrativo diretamente
         show_resultados_adm()
+        return
+    
+    # Verificar se há redirecionamento para análise administrativa
+    if st.session_state.get("redirect_to_analysis", False):
+        st.session_state["redirect_to_analysis"] = False
+        # Exibir análise administrativa diretamente
+        show_analysis_with_admin_controls()
         return
     
     # Processar a função selecionada

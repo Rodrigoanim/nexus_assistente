@@ -7,7 +7,7 @@
 # ================================================================
 
 # === CONFIGURACIÓN GENERAL ===
-app_title=Plataforma de Anclas de Carrera - v1.0a
+app_title=Plataforma de Anclas de Carrera - v1.1
 app_about=Sistema de Evaluación de Anclas de Carrera - Versión 1.0a - 03/08/2025
 
 # === MAIN.PY - PANTALLA DE LOGIN ===

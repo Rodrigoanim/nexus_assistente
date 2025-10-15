@@ -7,7 +7,7 @@
 # ================================================================
 
 # === GENERAL CONFIGURATION ===
-app_title=Career Anchor Platform - v1.0a
+app_title=Career Anchor Platform - v1.1
 app_about=Career Anchor Assessment System - Version 1.0a - 03/08/2025
 
 # === MAIN.PY - LOGIN SCREEN ===

@@ -11,7 +11,7 @@ app_title=Plataforma Âncora de Carreira - v1.0a
 app_about=Sistema de Assessment de Âncoras de Carreira - Versão 1.0a - 26/01/2025
 
 # === MAIN.PY - TELA DE LOGIN ===
-main_001=Plataforma Comportamental
+main_001=Plataforma Comportamental v1.1
 main_002=E-mail
 main_003=Senha
 main_004=Declaro que li e aceito os [termos de uso da ferramenta](https://ag93eventos.com.br/ear/Termos_Uso_DISC.pdf)

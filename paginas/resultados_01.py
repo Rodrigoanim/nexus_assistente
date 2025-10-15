@@ -219,9 +219,13 @@ def call_dados(cursor, element, tabela_destino: str):
         
         if type_elem == 'call_dados':
             # Busca o valor com CAST para garantir precisão decimal
-            cursor.execute("""
+            # Usar a tabela de origem baseada na tabela de destino
+            tabela_origem = tabela_destino.replace("forms_resultados", "forms_tab")
+            
+            
+            cursor.execute(f"""
                 SELECT CAST(value_element AS DECIMAL(20, 8))
-                FROM forms_tab_01 
+                FROM {tabela_origem} 
                 WHERE name_element = ? 
                 AND user_id = ?
                 ORDER BY ID_element DESC
@@ -243,7 +247,7 @@ def call_dados(cursor, element, tabela_destino: str):
                 
                 cursor.connection.commit()
             else:
-                st.warning(f"Valor não encontrado na tabela forms_tab_01 para {str_value} (user_id: {user_id})")
+                st.warning(f"Valor não encontrado na tabela {tabela_origem} para {str_value} (user_id: {user_id})")
                 
     except Exception as e:
         st.error(f"Erro ao processar call_dados: {str(e)}")
@@ -904,6 +908,7 @@ def show_results(tabela_escolhida: str, titulo_pagina: str, user_id: int):
         """
         st.markdown(hide_streamlit_style, unsafe_allow_html=True)
         
+        
         # Buscar todos os elementos ordenados por row e col
         cursor.execute(f"""
             SELECT name_element, type_element, math_element, msg_element,
@@ -918,6 +923,7 @@ def show_results(tabela_escolhida: str, titulo_pagina: str, user_id: int):
         """, (user_id,))
         
         elements = cursor.fetchall()
+        
         
         # Contador para gráficos
         grafico_count = 0
