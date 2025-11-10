@@ -31,6 +31,8 @@ import io
 import tempfile
 import matplotlib.pyplot as plt
 import traceback
+import re
+import os
 from paginas.monitor import registrar_acesso
 import time
 
@@ -695,7 +697,7 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
         doc = SimpleDocTemplate(
             buffer,
             pagesize=A4,
-            rightMargin=36,
+            rightMargin=50,
             leftMargin=36,
             topMargin=36,
             bottomMargin=36
@@ -834,6 +836,86 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                         colWidths=[graph_width],
                         style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]
                     ))
+                    elements.append(Spacer(1, 20))
+
+            # 5. ANÁLISE DETALHADA DO ASSESSMENT
+            try:
+                analise_texto = analisar_vulnerabilidade_7armadilhas(pdf_cursor, user_id, tabela_escolhida)
+                # Verificar se a análise retornou conteúdo válido (não apenas mensagem de erro)
+                if analise_texto and not analise_texto.startswith("Análise não disponível"):
+                    # Adicionar título da seção
+                    elements.append(PageBreak())
+                    elements.append(Paragraph("Análise Detalhada do Assessment", title_style))
+                    elements.append(Spacer(1, 20))
+                    
+                    # Converter HTML/Markdown para texto simples para o PDF
+                    # Remove tags HTML mas preserva estrutura básica
+                    texto_limpo = analise_texto
+                    # Remove tags HTML complexas mas preserva quebras de linha
+                    texto_limpo = re.sub(r'<br\s*/?>', '\n', texto_limpo, flags=re.IGNORECASE)
+                    texto_limpo = re.sub(r'</p>', '\n\n', texto_limpo, flags=re.IGNORECASE)
+                    texto_limpo = re.sub(r'</div>', '\n', texto_limpo, flags=re.IGNORECASE)
+                    texto_limpo = re.sub(r'<[^>]+>', '', texto_limpo)
+                    # Remove emojis mas preserva pontuação básica
+                    texto_limpo = re.sub(r'[^\w\s\.\,\;\:\!\?\-\(\)\/\n\r\'\"]', '', texto_limpo)
+                    # Normaliza quebras de linha
+                    texto_limpo = re.sub(r'\n{3,}', '\n\n', texto_limpo)
+                    texto_limpo = texto_limpo.strip()
+                    
+                    # Dividir em parágrafos e adicionar ao PDF
+                    paragrafos = [p.strip() for p in texto_limpo.split('\n\n') if p.strip() and len(p.strip()) > 10]
+                    
+                    # Estilos para diferentes níveis de texto
+                    analise_style = ParagraphStyle(
+                        'AnaliseStyle',
+                        parent=styles['Normal'],
+                        fontSize=10,
+                        alignment=0,  # Justificado à esquerda
+                        textColor=colors.HexColor('#1E1E1E'),
+                        fontName='Helvetica',
+                        leading=12,
+                        spaceBefore=6,
+                        spaceAfter=6
+                    )
+                    
+                    titulo_secao_style = ParagraphStyle(
+                        'TituloSecaoStyle',
+                        parent=styles['Heading2'],
+                        fontSize=14,
+                        alignment=0,
+                        textColor=colors.HexColor('#1E1E1E'),
+                        fontName='Helvetica-Bold',
+                        leading=16,
+                        spaceBefore=12,
+                        spaceAfter=8
+                    )
+                    
+                    for paragrafo in paragrafos:
+                        if paragrafo:
+                            # Identificar títulos (linhas curtas ou que começam com ##)
+                            if paragrafo.startswith('##') or (len(paragrafo) < 80 and paragrafo.isupper()):
+                                # É um título
+                                titulo_limpo = paragrafo.replace('##', '').strip()
+                                if titulo_limpo:
+                                    elements.append(Paragraph(titulo_limpo, titulo_secao_style))
+                                    elements.append(Spacer(1, 8))
+                            else:
+                                # É um parágrafo normal
+                                # Limitar tamanho do parágrafo para evitar problemas
+                                if len(paragrafo) > 800:
+                                    # Dividir parágrafos muito longos em frases
+                                    frases = re.split(r'[.!?]\s+', paragrafo)
+                                    for frase in frases:
+                                        if frase.strip():
+                                            elements.append(Paragraph(frase.strip() + '.', analise_style))
+                                            elements.append(Spacer(1, 4))
+                                else:
+                                    elements.append(Paragraph(paragrafo, analise_style))
+                                    elements.append(Spacer(1, 6))
+            except Exception as e:
+                # Se houver erro ao gerar a análise, continua sem ela
+                print(f"Erro ao adicionar análise ao PDF: {str(e)}")
+                pass
 
             doc.build(elements)
             return buffer
@@ -978,7 +1060,7 @@ def show_results(tabela_escolhida: str, titulo_pagina: str, user_id: int):
                                     call_dados(cursor, element, tabela_escolhida)
         
         # 5. Gerar e exibir a análise 7 Armadilhas
-        with st.expander("Clique aqui para ver sua Análise de Vulnerabilidade", expanded=False):
+        with st.expander("Análise Detalhada do Assessment", expanded=True):
             st.markdown("---")
             
             # Chama a função que gera e exibe a análise diretamente
@@ -1232,6 +1314,96 @@ def analisar_vulnerabilidade_7armadilhas_streamlit(cursor, user_id):
         st.error(f"Erro na análise de vulnerabilidade: {str(e)}")
         import traceback
         st.error(f"Detalhes do erro: {traceback.format_exc()}")
+
+def analisar_vulnerabilidade_7armadilhas(cursor, user_id, tabela_escolhida=None):
+    """
+    Retorna análise de vulnerabilidade das 7 Armadilhas do Eu Empresário em formato texto.
+    """
+    try:
+        # 1. Buscar dados do usuário
+        cursor.execute("""
+            SELECT u.nome, u.email, u.empresa 
+            FROM usuarios u 
+            WHERE u.user_id = ?
+        """, (user_id,))
+        usuario_info = cursor.fetchone()
+        
+        # 2. Buscar pontuação das perguntas diretas (M3000)
+        if tabela_escolhida:
+            tabela = tabela_escolhida
+        else:
+            tabela = st.session_state.get('tabela_escolhida', 'forms_resultados_04')
+        
+        cursor.execute(f"""
+            SELECT value_element
+            FROM {tabela}
+            WHERE user_id = ? AND str_element = 'M3000'
+            LIMIT 1
+        """, (user_id,))
+        result_diretas = cursor.fetchone()
+        pontuacao_diretas = float(result_diretas[0]) if result_diretas and result_diretas[0] is not None else 0.0
+        
+        # 3. Buscar pontuação das perguntas invertidas (N3000)
+        cursor.execute(f"""
+            SELECT value_element
+            FROM {tabela}
+            WHERE user_id = ? AND str_element = 'N3000'
+            LIMIT 1
+        """, (user_id,))
+        result_invertidas = cursor.fetchone()
+        pontuacao_invertidas = float(result_invertidas[0]) if result_invertidas and result_invertidas[0] is not None else 0.0
+        
+        # 4. Calcular vulnerabilidade total
+        vulnerabilidade_total = pontuacao_diretas + pontuacao_invertidas
+        
+        # 5. Determinar faixa de risco e arquivo correspondente
+        if vulnerabilidade_total <= 7:
+            faixa_risco = "Baixo Risco"
+            arquivo_markdown = "Conteudo/04/1_BaixoRisco.md"
+        elif vulnerabilidade_total <= 14:
+            faixa_risco = "Atenção"
+            arquivo_markdown = "Conteudo/04/2_Atencao.md"
+        elif vulnerabilidade_total <= 21:
+            faixa_risco = "Alto Risco"
+            arquivo_markdown = "Conteudo/04/3_AltoRisco.md"
+        else:
+            faixa_risco = "Risco Crítico"
+            arquivo_markdown = "Conteudo/04/4_RiscoCritico.md"
+        
+        # 6. Validação: se não encontrou dados
+        if not result_diretas and not result_invertidas:
+            return "Análise não disponível: dados de vulnerabilidade não encontrados."
+        
+        # 7. Ler arquivo de análise
+        caminhos_possiveis = [
+            arquivo_markdown,
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), arquivo_markdown),
+            os.path.join(os.path.dirname(__file__), arquivo_markdown),
+        ]
+        
+        conteudo_analise = None
+        for caminho in caminhos_possiveis:
+            try:
+                if os.path.exists(caminho):
+                    with open(caminho, 'r', encoding='utf-8') as f:
+                        conteudo_analise = f.read()
+                        break
+            except Exception:
+                continue
+        
+        if not conteudo_analise:
+            return f"Análise não disponível: arquivo {arquivo_markdown} não encontrado."
+        
+        # Retornar análise formatada com título e conteúdo
+        analise = f"## Análise de Vulnerabilidade - {faixa_risco}\n\n"
+        analise += f"**Pontuação Total:** {vulnerabilidade_total:.1f} pontos\n\n"
+        analise += conteudo_analise
+        
+        return analise
+        
+    except Exception as e:
+        traceback.print_exc()
+        return f"Ocorreu um erro inesperado ao gerar a análise: {str(e)}"
 
 # Função antiga removida - substituída por analisar_vulnerabilidade_7armadilhas_streamlit
 

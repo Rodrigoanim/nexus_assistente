@@ -28,6 +28,7 @@ main_012=Más que un diagnóstico, es un punto de partida para evolucionar con p
 
 # === MAIN.PY - ENCABEZADO DE APLICACIÓN ===
 main_013=Plataforma CHAVE - Desarrollo Humano, Automatizaciones con IA
+main_013a=Subtítulo
 main_014=Información del Usuario / Cerrar Sesión
 main_015=**Usuario:**
 main_016=**ID:**

@@ -1,7 +1,6 @@
-# Arquivo: form_model.py
-# type formula font attribute - somente inteiros
-# 10/07/2025 - 08:00 - ajuste função Formula - OK
-# Ajuste de títulos
+# Arquivo: form_model_03.py
+# Âncoras de Carreira
+# 05/11/2025 
 
 import sqlite3
 import streamlit as st
@@ -524,12 +523,12 @@ def process_forms_tab_03(section='ancoras_p1'):
         
         # Títulos com estilo baseados na seção
         titles = {
-            'ancoras_p1': get_texto('form_model_001', 'Avaliação de Âncoras de Carreira - Parte 1'),
-            'ancoras_p2': get_texto('form_model_002', 'Avaliação de Âncoras de Carreira - Parte 2'),
+            'ancoras_p1': get_texto('form_model_001', 'Parte 1 - das Âncoras de Carreira'),
+            'ancoras_p2': get_texto('form_model_002', 'Parte 2 - das Âncoras de Carreira'),
             'resultado': get_texto('form_model_003', 'Resultados das Avaliações'),
             # Manter compatibilidade com sistema antigo
-            'perfil': get_texto('form_model_001', 'Avaliação de Âncoras de Carreira - Parte 1'),
-            'comportamento': get_texto('form_model_002', 'Avaliação de Âncoras de Carreira - Parte 2')
+            'perfil': get_texto('form_model_001', 'Parte 1 - das Âncoras de Carreira'),
+            'comportamento': get_texto('form_model_002', 'Parte 2 - das Âncoras de Carreira')
         }
         
         title_text = titles.get(section, "Módulo de Avaliação de Âncoras de Carreira")
@@ -937,6 +936,59 @@ def process_forms_tab_03(section='ancoras_p1'):
 
         # Separador
         st.divider()
+        
+        # Adiciona os mesmos botões do menu no final da página para todas as seções
+        # Verifica se estamos no assessment "03" (Âncoras de Carreira)
+        assessment_id = st.session_state.get("selected_assessment_id", "")
+        if assessment_id == "03":
+            st.markdown("#### 📋 Selecione a Parte que deseja")
+            
+            # Usar os mesmos radio buttons do menu (key diferente para evitar conflito)
+            section_options = {
+                "📋 Parte 1": "ancoras_p1",
+                "✏️ Parte 2": "ancoras_p2", 
+                "📊 Resultados": "resultado"
+            }
+            
+            # Sincroniza com o valor do menu principal usando session_state
+            main_menu_value = st.session_state.get("ancoras_section_selector", None)
+            bottom_menu_value = st.session_state.get("ancoras_section_selector_bottom", None)
+            
+            # Determina o índice inicial baseado no valor do menu principal ou na seção atual
+            current_option = None
+            if main_menu_value:
+                current_option = main_menu_value
+            elif bottom_menu_value:
+                current_option = bottom_menu_value
+            else:
+                for option, value in section_options.items():
+                    if value == section:
+                        current_option = option
+                        break
+            
+            # Se não encontrou, usa a primeira opção
+            options_list = list(section_options.keys())
+            initial_index = options_list.index(current_option) if current_option in options_list else 0
+            
+            # Função callback para quando o menu do final da página mudar
+            def on_bottom_menu_change():
+                """Callback chamado quando o menu do final da página muda"""
+                selected = st.session_state["ancoras_section_selector_bottom"]
+                if selected:
+                    section_value = section_options[selected]
+                    # Atualiza a variável auxiliar que será lida pelo main.py
+                    st.session_state["target_section_03"] = section_value
+                    # Força rerun para que o main.py processe a mudança
+                    st.rerun()
+            
+            selected_section = st.radio(
+                "IMPORTANTE: Precisa responder tanto a Parte 1 quanto a Parte 2",
+                options=options_list,
+                key="ancoras_section_selector_bottom",  # Key diferente para evitar conflito
+                horizontal=True,
+                index=initial_index,
+                on_change=on_bottom_menu_change  # Callback quando mudar
+            )
 
     except Exception as e:
         st.error(f"Erro ao processar formulário: {str(e)}")

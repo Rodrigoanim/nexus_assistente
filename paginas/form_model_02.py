@@ -1,7 +1,7 @@
-# Arquivo: form_model.py
-# type formula font attribute - somente inteiros
-# 10/07/2025 - 08:00 - ajuste função Formula - OK
-# Ajuste de títulos
+# Arquivo: form_model_02.py
+# DISC Integral - 20 Perguntas
+# 07/11/2025 
+
 
 import sqlite3
 import streamlit as st
@@ -523,9 +523,9 @@ def process_forms_tab_02(section='perfil'):
         
         # Títulos com estilo baseados na seção
         titles = {
-            'perfil': "Função de Avaliação de Perfis",
-            'comportamento': "Função de Avaliação de Comportamento",
-            'resultado': "Função de Resultados"
+            'perfil': "Parte 1 - Avaliação de Perfis",
+            'comportamento': "Parte 2 - Avaliação de Comportamento",
+            'resultado': "Parte 3 - Resultados"
         }
         
         title_text = titles.get(section, "mòdulo de Avaliação de Perfis")
@@ -933,6 +933,59 @@ def process_forms_tab_02(section='perfil'):
 
         # Separador
         st.divider()
+        
+        # Adiciona os mesmos botões do menu no final da página para todas as seções
+        # Verifica se estamos no assessment "02" (DISC 20)
+        assessment_id = st.session_state.get("selected_assessment_id", "")
+        if assessment_id == "02":
+            st.markdown("#### 📋 Selecione a seção que deseja responder")
+            
+            # Usar os mesmos radio buttons do menu (key diferente para evitar conflito)
+            section_options = {
+                "📋 Parte 1": "perfil",
+                "✏️ Parte 2": "comportamento", 
+                "📊 Resultados": "resultado"
+            }
+            
+            # Sincroniza com o valor do menu principal usando session_state
+            main_menu_value = st.session_state.get("disc20_section_selector", None)
+            bottom_menu_value = st.session_state.get("disc20_section_selector_bottom", None)
+            
+            # Determina o índice inicial baseado no valor do menu principal ou na seção atual
+            current_option = None
+            if main_menu_value:
+                current_option = main_menu_value
+            elif bottom_menu_value:
+                current_option = bottom_menu_value
+            else:
+                for option, value in section_options.items():
+                    if value == section:
+                        current_option = option
+                        break
+            
+            # Se não encontrou, usa a primeira opção
+            options_list = list(section_options.keys())
+            initial_index = options_list.index(current_option) if current_option in options_list else 0
+            
+            # Função callback para quando o menu do final da página mudar
+            def on_bottom_menu_change():
+                """Callback chamado quando o menu do final da página muda"""
+                selected = st.session_state["disc20_section_selector_bottom"]
+                if selected:
+                    section_value = section_options[selected]
+                    # Atualiza a variável auxiliar que será lida pelo main.py
+                    st.session_state["target_section_02"] = section_value
+                    # Força rerun para que o main.py processe a mudança
+                    st.rerun()
+            
+            selected_section = st.radio(
+                "Escolha a seção:",
+                options=options_list,
+                key="disc20_section_selector_bottom",  # Key diferente para evitar conflito
+                horizontal=True,
+                index=initial_index,
+                on_change=on_bottom_menu_change  # Callback quando mudar
+            )
 
     except Exception as e:
         st.error(f"Erro ao processar formulário: {str(e)}")

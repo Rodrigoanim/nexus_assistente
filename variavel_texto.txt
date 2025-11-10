@@ -1,34 +1,36 @@
 # ARQUIVO: variavel_texto.txt
-# Sistema de Âncora de Carreira - Textos Externos
-# Data: 26/01/2025 - Transição do projeto DISC para Âncora de Carreira
+# Plataforma: C.H.A.V.E. Comportamental - Textos Português
+# Data: 04/11/2025 
 # 
 # CONVENÇÃO: [nome_arquivo]_[sequencial_3_digitos]
 #
 # ================================================================
 
 # === CONFIGURAÇÃO GERAL ===
-app_title=Plataforma Âncora de Carreira - v1.0a
-app_about=Sistema de Assessment de Âncoras de Carreira - Versão 1.0a - 26/01/2025
+app_title=Plataforma C.H.A.V.E. Comportamental v2.0.
+app_about=Sistema de Assessments - 04/11/2025
 
 # === MAIN.PY - TELA DE LOGIN ===
-main_001=Plataforma Comportamental v1.1
+main_001=Plataforma C.H.A.V.E. Comportamental  v2.0
 main_002=E-mail
 main_003=Senha
-main_004=Declaro que li e aceito os [termos de uso da ferramenta](https://ag93eventos.com.br/ear/Termos_Uso_DISC.pdf)
+main_004=Declaro que li e aceito os [termos de uso da Plataforma](https://ag93eventos.com.br/ear/Termos_Uso_DISC.pdf)
 main_005=Entrar
 main_006=Você deve aceitar os termos de uso para continuar.
 main_007=E-mail ou senha inválidos. Por favor, verifique seus dados e tente novamente.
 
 # === MAIN.PY - TELA BEM-VINDO ===
-main_008=Plataforma Comportamental
+main_008=Plataforma C.H.A.V.E. Comportamental
 main_009=Propósito
-main_010 = Esta plataforma reúne múltiplos assessments integrados — como DISC, Âncoras de Carreira e As Armadilhas do Empreendedor — para mapear de forma ampla seus comportamentos, valores e motivações profissionais.
-main_011 = Ao explorar diferentes diagnósticos, você ativa uma jornada completa de autoconhecimento aplicado, ampliando sua consciência sobre seus perfis pessoais e profissionais, fortalecendo suas decisões e expandindo seu potencial de desenvolvimento com propósito e clareza.
-main_012 = Mais do que um conjunto de testes, é uma experiência evolutiva contínua: um espaço para refletir, aprender e alinhar sua trajetória profissional a quem você é, com autenticidade, coerência e realização.
-
+main_009b=Como fazemos
+main_009c=O que fazemos
+main_010 = Nosso propósito é impulsionar o desenvolvimento de pessoas, profissionais, instituições educacionais, governos e organizações por meio de assessments e ferramentas que promovem a ampliação da qualidade humana. Utilizamos dados e informações como um painel de bordo estratégico, capaz de revelar oportunidades de crescimento e desenvolvimento. Assim, contribuímos para que indivíduos e organizações alcancem felicidade, sucesso e resultados sustentáveis.
+main_011 = Exploramos uma combinação de assessments e ferramentas comportamentais baseadas em metodologias reconhecidas e abordagens autorais, ativando uma jornada completa de autoconhecimento aplicado. Essa jornada amplia a consciência sobre perfis pessoais e profissionais, fortalecendo competências como autogestão, inteligência e agilidade emocional. Assim, impulsionamos o desenvolvimento das principais funções cognitivas — atenção, memória, decisão, emoção e aprendizagem — nutrindo os pilares essenciais do ser humano: emocional (conexões), mental (cérebro), físico (construção) e espiritual (consciência).
+main_012 = Partindo da compreensão profunda de um dos maiores desafios contemporâneos — entender verdadeiramente as pessoas — desenvolvemos soluções comportamentais, inclusive personalizadas, que apoiam profissionais, líderes, gestores e organizações de todas as áreas. Nossas ferramentas promovem uma conexão cérebro e coração, posicionando-os  como o novo CEO do Século XXI. Com isso, colocamos o ser humano no centro das decisões, ampliando a consciência, a empatia e a inteligência relacional para transformar resultados com propósito e aproveitar as facilidades da Era Tecnológica e a necessidade de regeneração e sustentabilidade  humana e organizacional.
 
 # === MAIN.PY - HEADER APLICAÇÃO ===
-main_013=C.H.A.V.E. - Conhecimentos, Habilidades, Atitude, Valores e o Entorno 
+main_013=C.H.A.V.E. Comportamental 
+main_013a=Plataforma viva para diagnóstico, desenvolvimento e alinhamento do comportamento humano a vida pessoal, profissional e ao negócio
 main_014=Informações do Usuário / Logout
 main_015=**Usuário:**
 main_016=**ID:**
@@ -95,6 +97,10 @@ main_060=Função não encontrada.
 main_061=Análise das Avaliações
 
 # === FORM_MODEL.PY - TÍTULOS DAS SEÇÕES ===
-form_model_001=Avaliação de Âncoras de Carreira - Parte 1
-form_model_002=Avaliação de Âncoras de Carreira - Parte 2
+form_model_001=Parte 1 - Âncoras de Carreira 
+form_model_002=Parte 2 - Âncoras de Carreira
 form_model_003=Resultados das Avaliações
+
+# === RESULTADOS_01.PY - MENSAGENS ===
+resultados_001=Dê o próximo passo no desenvolvimento humano e profissional. <br>Converse com Erika Rossi – (11) 99506-6778.
+

@@ -1,5 +1,5 @@
-# resultados.py
-# Data: 28/06/2025 09:35
+# resultados_02.py
+# Data: 05/11/2025
 # Pagina de resultados e Analises - Dashboard.
 # Tabela: forms_resultados_02
 
@@ -31,6 +31,7 @@ import io
 import tempfile
 import matplotlib.pyplot as plt
 import traceback
+import re
 from paginas.monitor import registrar_acesso
 import time
 
@@ -695,7 +696,7 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
         doc = SimpleDocTemplate(
             buffer,
             pagesize=A4,
-            rightMargin=36,
+            rightMargin=50,
             leftMargin=36,
             topMargin=36,
             bottomMargin=36
@@ -834,6 +835,86 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                         colWidths=[graph_width],
                         style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]
                     ))
+                    elements.append(Spacer(1, 20))
+
+            # 5. ANÁLISE DETALHADA DO ASSESSMENT
+            try:
+                analise_texto = analisar_perfil_disc(pdf_cursor, user_id, tabela_escolhida)
+                # Verificar se a análise retornou conteúdo válido (não apenas mensagem de erro)
+                if analise_texto and not analise_texto.startswith("Análise não disponível"):
+                    # Adicionar título da seção
+                    elements.append(PageBreak())
+                    elements.append(Paragraph("Análise Detalhada do Assessment", title_style))
+                    elements.append(Spacer(1, 20))
+                    
+                    # Converter HTML/Markdown para texto simples para o PDF
+                    # Remove tags HTML mas preserva estrutura básica
+                    texto_limpo = analise_texto
+                    # Remove tags HTML complexas mas preserva quebras de linha
+                    texto_limpo = re.sub(r'<br\s*/?>', '\n', texto_limpo, flags=re.IGNORECASE)
+                    texto_limpo = re.sub(r'</p>', '\n\n', texto_limpo, flags=re.IGNORECASE)
+                    texto_limpo = re.sub(r'</div>', '\n', texto_limpo, flags=re.IGNORECASE)
+                    texto_limpo = re.sub(r'<[^>]+>', '', texto_limpo)
+                    # Remove emojis mas preserva pontuação básica
+                    texto_limpo = re.sub(r'[^\w\s\.\,\;\:\!\?\-\(\)\/\n\r\'\"]', '', texto_limpo)
+                    # Normaliza quebras de linha
+                    texto_limpo = re.sub(r'\n{3,}', '\n\n', texto_limpo)
+                    texto_limpo = texto_limpo.strip()
+                    
+                    # Dividir em parágrafos e adicionar ao PDF
+                    paragrafos = [p.strip() for p in texto_limpo.split('\n\n') if p.strip() and len(p.strip()) > 10]
+                    
+                    # Estilos para diferentes níveis de texto
+                    analise_style = ParagraphStyle(
+                        'AnaliseStyle',
+                        parent=styles['Normal'],
+                        fontSize=10,
+                        alignment=0,  # Justificado à esquerda
+                        textColor=colors.HexColor('#1E1E1E'),
+                        fontName='Helvetica',
+                        leading=12,
+                        spaceBefore=6,
+                        spaceAfter=6
+                    )
+                    
+                    titulo_secao_style = ParagraphStyle(
+                        'TituloSecaoStyle',
+                        parent=styles['Heading2'],
+                        fontSize=14,
+                        alignment=0,
+                        textColor=colors.HexColor('#1E1E1E'),
+                        fontName='Helvetica-Bold',
+                        leading=16,
+                        spaceBefore=12,
+                        spaceAfter=8
+                    )
+                    
+                    for paragrafo in paragrafos:
+                        if paragrafo:
+                            # Identificar títulos (linhas curtas ou que começam com ##)
+                            if paragrafo.startswith('##') or (len(paragrafo) < 80 and paragrafo.isupper()):
+                                # É um título
+                                titulo_limpo = paragrafo.replace('##', '').strip()
+                                if titulo_limpo:
+                                    elements.append(Paragraph(titulo_limpo, titulo_secao_style))
+                                    elements.append(Spacer(1, 8))
+                            else:
+                                # É um parágrafo normal
+                                # Limitar tamanho do parágrafo para evitar problemas
+                                if len(paragrafo) > 800:
+                                    # Dividir parágrafos muito longos em frases
+                                    frases = re.split(r'[.!?]\s+', paragrafo)
+                                    for frase in frases:
+                                        if frase.strip():
+                                            elements.append(Paragraph(frase.strip() + '.', analise_style))
+                                            elements.append(Spacer(1, 4))
+                                else:
+                                    elements.append(Paragraph(paragrafo, analise_style))
+                                    elements.append(Spacer(1, 6))
+            except Exception as e:
+                # Se houver erro ao gerar a análise, continua sem ela
+                print(f"Erro ao adicionar análise ao PDF: {str(e)}")
+                pass
 
             doc.build(elements)
             return buffer
@@ -978,7 +1059,7 @@ def show_results(tabela_escolhida: str, titulo_pagina: str, user_id: int):
                                     call_dados(cursor, element, tabela_escolhida)
         
         # 5. Gerar e exibir a análise DISC
-        with st.expander("Clique aqui para ver sua Análise DISC de PERFIL", expanded=False):
+        with st.expander("Análise Detalhada do Assessment", expanded=True):
             st.markdown("---")
             
             # Chama a função que gera e exibe a análise diretamente
@@ -1423,7 +1504,7 @@ def analisar_perfil_disc_streamlit(cursor, user_id):
     except Exception as e:
         st.error(f"Erro na análise DISC: {str(e)}")
 
-def analisar_perfil_disc(cursor, user_id):
+def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
     """
     Realiza uma análise completa do perfil DISC do usuário dividida em 2 blocos:
     1. Análise do Perfil - características, pontos fortes e limitações
@@ -1452,7 +1533,11 @@ def analisar_perfil_disc(cursor, user_id):
         usuario_info = cursor.fetchone()
         
         # 2. Encontrar o gráfico de resultados DISC - busca mais ampla
-        tabela = st.session_state.tabela_escolhida
+        # Usa tabela_escolhida como parâmetro se fornecido, senão usa session_state
+        if tabela_escolhida:
+            tabela = tabela_escolhida
+        else:
+            tabela = st.session_state.get('tabela_escolhida', 'forms_resultados_02')
         
         # Primeiro tenta buscar por diferentes títulos possíveis
         titulos_busca = [
@@ -1539,13 +1624,6 @@ def analisar_perfil_disc(cursor, user_id):
                 if first_letter in ['D', 'I', 'S', 'C']:
                     profile_map[name] = first_letter
 
-        # Debug temporário: Vamos ver o mapeamento atual
-        st.write("🔍 **Debug - Mapeamento encontrado:**")
-        st.write(f"name_elements: {name_elements}")
-        st.write(f"labels: {labels}")
-        st.write(f"profile_map: {profile_map}")
-        st.write("---")
-
         # 3. Obter os valores DISC do usuário
         placeholders = ','.join('?' for _ in name_elements)
         cursor.execute(f"""
@@ -1588,230 +1666,114 @@ def analisar_perfil_disc(cursor, user_id):
             **Problema:** Apenas {len(perfil)} perfis encontrados. Necessário pelo menos 2 para análise.
             """
 
-        # 4. Ler e parsear a base de conhecimento
-        try:
-            with open('base_conhecimento_disc.md', 'r', encoding='utf-8') as f:
-                base_conhecimento = f.read()
-        except FileNotFoundError:
-            st.error("Arquivo 'base_conhecimento_disc.md' não encontrado.")
-            return "Análise não disponível: arquivo de conhecimento ausente."
-
-        secoes = {}
-        tags = {
-            "individuais": ("<Perfis_Individuais>", "</Perfis_Individuais>"),
-            "combinados": ("<Perfis_Combinados>", "</Perfis_Combinados>"),
-            "excesso": ("<Excesso_Pontos_Fortes>", "</Excesso_Pontos_Fortes>"),
-            "aperfeicoamento": ("<Caminhos_Aperfeiçoamento>", "</Caminhos_Aperfeiçoamento>")
-        }
-        for nome, (inicio_tag, fim_tag) in tags.items():
-            inicio = base_conhecimento.find(inicio_tag)
-            fim = base_conhecimento.find(fim_tag, inicio)
-            if inicio != -1 and fim != -1:
-                secoes[nome] = base_conhecimento[inicio + len(inicio_tag):fim].strip()
+        # 4. Calcular variáveis híbridas (mesma lógica da função streamlit)
+        import os
+        elementos_busca = ['C31', 'D31', 'C32', 'D32', 'C33', 'D33', 'C34', 'D34']
+        valores_elementos = {}
+        
+        for elemento in elementos_busca:
+            cursor.execute(f"""
+                SELECT value_element
+                FROM {tabela}
+                WHERE user_id = ? AND name_element = ?
+                LIMIT 1
+            """, (user_id, elemento))
+            result = cursor.fetchone()
+            if result and result[0] is not None:
+                # Converter formato brasileiro para float
+                try:
+                    valor_str = str(result[0]).replace(',', '.')
+                    valor_convertido = float(valor_str)
+                    # Aplicar correção se valor estiver multiplicado por 1000
+                    if valor_convertido >= 1000:
+                        valores_elementos[elemento] = valor_convertido / 1000
+                    else:
+                        valores_elementos[elemento] = valor_convertido
+                except:
+                    valores_elementos[elemento] = 0.0
             else:
-                secoes[nome] = ""
+                valores_elementos[elemento] = 0.0
+        
+        # Calcular variáveis híbridas
+        variaveis_hibridas = []
+        dominancia_hibrida = (valores_elementos.get('C31', 0) + valores_elementos.get('D31', 0)) / 2
+        influencia_hibrida = (valores_elementos.get('C32', 0) + valores_elementos.get('D32', 0)) / 2
+        estabilidade_hibrida = (valores_elementos.get('C33', 0) + valores_elementos.get('D33', 0)) / 2
+        conformidade_hibrida = (valores_elementos.get('C34', 0) + valores_elementos.get('D34', 0)) / 2
+        
+        variaveis_hibridas = [
+            {'dimensao': 'Dominância', 'letra': 'D', 'valor_hibrido': dominancia_hibrida},
+            {'dimensao': 'Influência', 'letra': 'I', 'valor_hibrido': influencia_hibrida},
+            {'dimensao': 'Estabilidade', 'letra': 'S', 'valor_hibrido': estabilidade_hibrida},
+            {'dimensao': 'Conformidade', 'letra': 'C', 'valor_hibrido': conformidade_hibrida}
+        ]
+        variaveis_hibridas.sort(key=lambda x: x['valor_hibrido'], reverse=True)
+        
+        if len(variaveis_hibridas) < 2:
+            return "Análise não disponível: dados insuficientes para análise."
+        
+        # Determinar tipo de perfil e arquivo correspondente
+        primario = variaveis_hibridas[0]
+        secundario = variaveis_hibridas[1]
+        diferenca = primario['valor_hibrido'] - secundario['valor_hibrido']
+        
+        if diferenca > 5:
+            # PERFIL ÚNICO
+            letra_primaria = primario['letra']
+            arquivos_unicos = {
+                'D': 'Conteudo/02/1_D_Dominancia.md',
+                'I': 'Conteudo/02/1_I_Influencia.md', 
+                'S': 'Conteudo/02/1_S_Estabilidade.md',
+                'C': 'Conteudo/02/1_C_Conformidade.md'
+            }
+            arquivo_analise = arquivos_unicos.get(letra_primaria)
+            titulo_analise = f"Perfil ÚNICO: {primario['dimensao']}"
+        else:
+            # PERFIL COMBINADO
+            letra_primaria = primario['letra']
+            letra_secundaria = secundario['letra']
+            combinacao = f"{letra_primaria}{letra_secundaria}"
+            arquivos_combinados = {
+                'DC': 'Conteudo/02/21_DC_DOMINANCIA_CONFORMIDADE.md',
+                'DI': 'Conteudo/02/22_DI_DOMINANCIA_INFLUENCIA.md',
+                'ID': 'Conteudo/02/23_ID_INFLUENCIA_DOMINANCIA.md',
+                'IS': 'Conteudo/02/24_IS_INFLUENCIA_ESTABILIDADE.md',
+                'SI': 'Conteudo/02/25_SI_ESTABILIDADE_INFLUENCIA.md',
+                'SC': 'Conteudo/02/26_SC_ESTABILIDADE_CONFORMIDADE.md',
+                'CD': 'Conteudo/02/27_CD_CONFORMIDADE_DOMINANCIA.md',
+                'CS': 'Conteudo/02/28_CS_CONFORMIDADE_ESTABILIDADE.md'
+            }
+            arquivo_analise = arquivos_combinados.get(combinacao)
+            titulo_analise = f"Perfil COMBINADO: {primario['dimensao']} + {secundario['dimensao']}"
+        
+        # Ler arquivo de análise
+        if not arquivo_analise:
+            return "Análise não disponível: perfil não mapeado."
+        
+        # Tentar diferentes caminhos possíveis para o arquivo
+        caminhos_possiveis = [
+            arquivo_analise,
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), arquivo_analise),
+            os.path.join(os.path.dirname(__file__), arquivo_analise),
+        ]
+        
+        conteudo_analise = None
+        for caminho in caminhos_possiveis:
+            try:
+                if os.path.exists(caminho):
+                    with open(caminho, 'r', encoding='utf-8') as f:
+                        conteudo_analise = f.read()
+                        break
+            except Exception:
+                continue
+        
+        if not conteudo_analise:
+            return f"Análise não disponível: arquivo {arquivo_analise} não encontrado."
 
-        # 5. Definir perfis primário e secundário
-        perfil_ordenado = sorted(perfil.items(), key=lambda item: item[1], reverse=True)
-        perfil_primario, valor_primario = perfil_ordenado[0]
-        perfil_secundario, valor_secundario = perfil_ordenado[1] if len(perfil_ordenado) > 1 else ('', 0)
-
-        # 6. Helper para extrair conteúdo
-        def extrair_conteudo(secao_texto, chaves_busca):
-            for chave in chaves_busca:
-                inicio = secao_texto.find(chave)
-                if inicio != -1:
-                    fim = secao_texto.find('###', inicio + len(chave))
-                    conteudo_bloco = secao_texto[inicio:fim if fim != -1 else len(secao_texto)].strip()
-                    # Retorna o conteúdo APÓS a linha de chave (ex: "### D")
-                    return conteudo_bloco.split('\n', 1)[1].strip() if '\n' in conteudo_bloco else ""
-            return ""
-
-        def formatar_tabela_html(raw_text, title):
-            """
-            Formata um texto com estrutura de tabela (cabeçalho e linhas separadas
-            por quebras de linha, colunas por '|') em uma tabela HTML estilizada.
-            """
-            if not raw_text or '|' not in raw_text:
-                return f"<h4>{title}</h4><p>{raw_text}</p>" if raw_text else ""
-
-            lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
-            if not lines or len(lines) < 2:
-                return f"<h4>{title}</h4><p>{raw_text}</p>"
-
-            header_cols = [h.strip() for h in lines[0].split('|')]
-            if not header_cols:
-                return f"<h4>{title}</h4><p>{raw_text}</p>"
-
-            html = f"<br><h4>{title}</h4>"
-            html += "<div style='font-size: 16px; width: 95%; margin: 0 auto;'>"
-            html += "<table style='width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 10px; overflow: hidden; box-shadow: 0 0 8px rgba(0,0,0,0.1);'>"
-            
-            html += "<thead><tr style='background-color: #e8f5e9;'>"
-            for col_title in header_cols:
-                html += f"<th style='text-align: left; padding: 12px; border-bottom: 2px solid #dee2e6;'>{col_title}</th>"
-            html += "</tr></thead>"
-            
-            html += "<tbody>"
-            row_data = lines[1:]
-            for i, row_str in enumerate(row_data):
-                cols = [c.strip() for c in row_str.split('|')]
-                if len(cols) == len(header_cols):
-                    bg_color_style = "background-color: #f8f9fa;" if i % 2 else "background-color: #ffffff;"
-                    html += f"<tr style='{bg_color_style}'>"
-                    for col_data in cols:
-                        html += f"<td style='padding: 10px 12px; border-bottom: 1px solid #dee2e6;'>{col_data}</td>"
-                    html += "</tr>"
-            html += "</tbody></table></div>"
-            return html
-
-        # ===== INÍCIO DA MONTAGEM DA ANÁLISE =====
+        # Retornar análise formatada com título e conteúdo
+        analise = f"## {titulo_analise}\n\n"
+        analise += conteudo_analise
         
-        # CABEÇALHO PRINCIPAL
-        analise = f"## 📊 Análise Comportamental DISC\n\n"
-        
-        # DADOS DO USUÁRIO
-        analise += f"### 👤 Informações do Participante\n\n"
-        if usuario_info:
-            analise += f"""
-            <div style='background-color: #f0f8ff; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #0066cc;'>
-                <p style='margin: 0; font-size: 16px;'>
-                    <strong>👤 Nome:</strong> {usuario_info[0] or 'Não informado'}<br>
-                    <strong>📧 Email:</strong> {usuario_info[1] or 'Não informado'}<br>
-                    <strong>🏢 Empresa:</strong> {usuario_info[2] or 'Não informado'}
-                </p>
-            </div>
-            """
-        
-        # DADOS DA AVALIAÇÃO - Tabela com pontuações
-        analise += f"### 📈 Resultados da sua Avaliação DISC\n\n"
-        analise += f"*Baseado no gráfico: {titulo_grafico}* | *Busca: {titulo_grafico_usado}*\n\n"
-        
-        # Criar tabela HTML com os resultados
-        dados_avaliacao = f"""
-        <div style='font-size: 16px; width: 90%; margin: 20px auto;'>
-            <table style='width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 10px; overflow: hidden; box-shadow: 0 0 8px rgba(0,0,0,0.1);'>
-                <thead>
-                    <tr style='background-color: #e3f2fd;'>
-                        <th style='text-align: center; padding: 12px; border-bottom: 2px solid #1976d2; color: #1976d2; font-weight: bold;'>Perfil DISC</th>
-                        <th style='text-align: center; padding: 12px; border-bottom: 2px solid #1976d2; color: #1976d2; font-weight: bold;'>Pontuação</th>
-                        <th style='text-align: center; padding: 12px; border-bottom: 2px solid #1976d2; color: #1976d2; font-weight: bold;'>Posição</th>
-                    </tr>
-                </thead>
-                <tbody>
-        """
-        
-        # Adicionar linhas da tabela ordenadas por pontuação
-        nomes_perfis = {'D': 'Dominante', 'I': 'Influente', 'S': 'Estável', 'C': 'Conforme'}
-        for i, (letra, valor) in enumerate(perfil_ordenado):
-            if i == 0:
-                destaque = "background-color: #fff3e0; font-weight: bold; color: #f57c00;"
-                posicao = "1º - Primário"
-            elif i == 1:
-                destaque = "background-color: #f3e5f5; font-weight: bold; color: #7b1fa2;"
-                posicao = "2º - Secundário"
-            else:
-                destaque = "background-color: #f5f5f5;"
-                posicao = f"{i+1}º"
-            
-            nome_completo = nomes_perfis.get(letra, letra)
-            
-            dados_avaliacao += f"""
-                    <tr style='{destaque}'>
-                        <td style='text-align: center; padding: 10px 12px; border-bottom: 1px solid #dee2e6;'>{letra} - {nome_completo}</td>
-                        <td style='text-align: center; padding: 10px 12px; border-bottom: 1px solid #dee2e6;'>{valor:.1f}</td>
-                        <td style='text-align: center; padding: 10px 12px; border-bottom: 1px solid #dee2e6;'>{posicao}</td>
-                    </tr>
-            """
-        
-        dados_avaliacao += """
-                </tbody>
-            </table>
-        </div>
-        """
-        
-        analise += dados_avaliacao
-        
-        # Resumo do perfil identificado
-        analise += f"""
-        <div style='background-color: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 10px; border-left: 5px solid #007bff;'>
-            <h4 style='color: #007bff; margin: 0 0 10px 0;'>🎯 Seu Perfil Identificado</h4>
-            <p style='font-size: 18px; margin: 0; color: #495057;'>
-                <strong>Perfil Principal:</strong> {perfil_primario} - {nomes_perfis.get(perfil_primario, perfil_primario)} ({valor_primario:.1f} pontos)<br>
-                {f"<strong>Perfil Secundário:</strong> {perfil_secundario} - {nomes_perfis.get(perfil_secundario, perfil_secundario)} ({valor_secundario:.1f} pontos)<br>" if perfil_secundario else ""}
-                <strong>Combinação:</strong> {perfil_primario}{f"/{perfil_secundario}" if perfil_secundario else ""}
-            </p>
-        </div>
-        """
-        
-        analise += "\n---\n\n"
-        
-        # ===== BLOCO 1: ANÁLISE DO PERFIL =====
-        analise += f"## 🔍 BLOCO 1 - Análise do Perfil\n\n"
-        
-        # Perfil Combinado
-        if perfil_secundario:
-            chaves_combinado = [f"### {perfil_primario}/{perfil_secundario} -", f"### {perfil_secundario}/{perfil_primario} -"]
-            desc_combinado = extrair_conteudo(secoes.get("combinados", ""), chaves_combinado)
-
-            if desc_combinado:
-                analise += f"### 🤝 Perfil Combinado: {perfil_primario}/{perfil_secundario}\n\n"
-                analise += f"{desc_combinado}\n\n"
-        
-        # Perfil Individual (com pontos fortes e limitações)
-        conteudo_individual_raw = extrair_conteudo(secoes.get("individuais", ""), [f"### Perfil {perfil_primario} -"])
-        desc_individual, pontos_fortes_html, limitacoes_html = "", "", ""
-        
-        if conteudo_individual_raw:
-            # Extrair descrição principal
-            inicio_fortes = conteudo_individual_raw.find('- **Pontos Fortes:**')
-            desc_individual = conteudo_individual_raw[:inicio_fortes if inicio_fortes != -1 else len(conteudo_individual_raw)].strip()
-            
-            analise += f"### 👤 Características do seu Perfil Principal: {perfil_primario}\n\n"
-            analise += f"{desc_individual}\n\n"
-            
-            # Extrair pontos fortes
-            if inicio_fortes != -1:
-                inicio_limit = conteudo_individual_raw.find('- **Limitações:**', inicio_fortes)
-                fortes_raw = conteudo_individual_raw[inicio_fortes:inicio_limit if inicio_limit != -1 else len(conteudo_individual_raw)]
-                fortes_raw = fortes_raw.replace('- **Pontos Fortes:**', '').strip()
-                fortes_lista = [f"<li>{item.strip()}</li>" for item in fortes_raw.split(',') if item.strip()]
-                pontos_fortes_html = f"<h4>✅ Pontos Fortes ({perfil_primario})</h4><ul>{''.join(fortes_lista)}</ul>"
-
-            # Extrair limitações
-            if inicio_limit != -1:
-                limitacoes_raw = conteudo_individual_raw[inicio_limit:].replace('- **Limitações:**', '').strip()
-                limitacoes_lista = [f"<li>{item.strip()}</li>" for item in limitacoes_raw.split(',') if item.strip()]
-                limitacoes_html = f"<h4>⚠️ Limitações a observar ({perfil_primario})</h4><ul>{''.join(limitacoes_lista)}</ul>"
-
-            # Adicionar pontos fortes e limitações
-            if pontos_fortes_html:
-                analise += f"{pontos_fortes_html}\n\n"
-
-            if limitacoes_html:
-                analise += f"{limitacoes_html}\n\n"
-        
-        analise += "\n---\n\n"
-        
-        # ===== BLOCO 2: ANÁLISE DO COMPORTAMENTO =====
-        analise += f"## 🎭 BLOCO 2 - Análise do Comportamento\n\n"
-        analise += f"*Esta seção será desenvolvida na próxima etapa...*\n\n"
-        
-        # Extrair e formatar seções de Excesso e Aperfeiçoamento (temporariamente comentado)
-        # desc_excesso_raw = extrair_conteudo(secoes.get("excesso", ""), [f"### {perfil_primario}"])
-        # desc_aperfeicoamento_raw = extrair_conteudo(secoes.get("aperfeicoamento", ""), [f"### {perfil_primario}"])
-        # html_excesso = formatar_tabela_html(desc_excesso_raw, "Quando seus Pontos Fortes são usados em Excesso")
-        # html_aperfeicoamento = formatar_tabela_html(desc_aperfeicoamento_raw, "Caminhos para o Aperfeiçoamento e Desenvolvimento")
-        
-        # if html_excesso:
-        #     analise += f"{html_excesso}\n\n"
-        # if html_aperfeicoamento:
-        #     analise += f"{html_aperfeicoamento}\n\n"
-
-        # Validação final
-        if not any([desc_combinado if perfil_secundario else True, desc_individual]):
-            analise += f"⚠️ **Observação:** Algumas seções da análise podem estar incompletas devido à estrutura do arquivo de conhecimento."
-
         return analise
 
     except Exception as e:

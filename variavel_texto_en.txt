@@ -22,12 +22,15 @@ main_007=Invalid email or password. Please check your data and try again.
 # === MAIN.PY - WELCOME SCREEN ===
 main_008=Research Based on Career Anchor Methodology
 main_009=Purpose
+main_009b=How we do it
+main_009c=What we do
 main_010=This Web App aims to identify your predominant career anchors, revealing your fundamental professional values, motivations and aspirations.
 main_011=By identifying your anchors, you activate a journey of applied professional self-knowledge that expands your awareness of your motivations, strengthens your career choices and enhances your decisions with more clarity, purpose and alignment.
 main_012=More than a diagnosis, it is a starting point to evolve with purpose, make conscious professional choices and build a career with authenticity and satisfaction.
 
 # === MAIN.PY - APPLICATION HEADER ===
 main_013=CHAVE Platform - Human Development, AI Automations
+main_013a=Subtitle
 main_014=User Information / Logout
 main_015=**User:**
 main_016=**ID:**

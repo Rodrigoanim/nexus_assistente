@@ -1,4 +1,4 @@
-# Data: 05/11/2025
+# Data: 07/11/2025
 # IDE Cursor - Auto Agent
 # uv run streamlit run main.py
 # Plataforma com varios assessments
@@ -533,56 +533,6 @@ def authenticate_user():
                 [data-testid="stAppViewContainer"] p {
                     color: black;
                 }
-                
-                /* Aumentar o tamanho dos botões das abas Login e Cadastro (reduzido 30%) */
-                div[data-baseweb="tab-list"] button {
-                    font-size: 22px !important;
-                    padding: 14px 28px !important;
-                    height: 56px !important;
-                    min-width: 140px !important;
-                    line-height: 1.5 !important;
-                }
-                
-                /* Aumentar o tamanho do texto dentro das abas - todos os seletores possíveis */
-                div[data-baseweb="tab-list"] button,
-                div[data-baseweb="tab-list"] button *,
-                div[data-baseweb="tab-list"] button span,
-                div[data-baseweb="tab-list"] button p,
-                div[data-baseweb="tab-list"] button div,
-                div[data-baseweb="tab-list"] button label {
-                    font-size: 22px !important;
-                    font-weight: 500 !important;
-                }
-                
-                /* Aumentar o tamanho dos ícones nas abas */
-                div[data-baseweb="tab-list"] button svg {
-                    width: 22px !important;
-                    height: 22px !important;
-                }
-                
-                /* Forçar tamanho do texto nas abas usando seletores mais específicos do Streamlit */
-                [data-testid="stTabs"] button,
-                [data-testid="stTabs"] button *,
-                [data-testid="stTabs"] button span,
-                [data-testid="stTabs"] button p,
-                [data-testid="stTabs"] button div {
-                    font-size: 22px !important;
-                }
-                
-                /* Seletores adicionais para garantir que o texto seja aumentado */
-                button[data-baseweb="tab"] {
-                    font-size: 22px !important;
-                }
-                
-                button[data-baseweb="tab"] * {
-                    font-size: 22px !important;
-                }
-                
-                /* Forçar tamanho em todos os elementos filhos dos botões das abas */
-                div[data-baseweb="tab-list"] > div > button,
-                div[data-baseweb="tab-list"] > div > button * {
-                    font-size: 22px !important;
-                }
             </style>
         """, unsafe_allow_html=True)
     
@@ -856,14 +806,11 @@ def show_assessment_selector():
     # Chave única para o seletor
     unique_key = f"assessment_selector_{user_id}"
     
-    # Ajustar a largura do selectbox para 2/3 usando colunas
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        selected_assessment = st.selectbox(
-            "Selecione o Assessment que deseja responder e avance pelas três etapas — Parte 1, Parte 2 e Resultados.",
-            options=assessment_options,
-            key=unique_key
-        )
+    selected_assessment = st.selectbox(
+        "Selecione o Assessment que deseja responder e avance pelas três etapas — Parte 1, Parte 2 e Resultados.",
+        options=assessment_options,
+        key=unique_key
+    )
     
     # Verificar se uma opção válida foi selecionada (não a opção padrão)
     if selected_assessment and selected_assessment != "Selecione um assessment...":
@@ -961,67 +908,27 @@ def show_assessment_execution():
         # Mapeamento específico para DISC Essencial 
         st.markdown("#### 📋 Selecione a Parte que deseja")
         
+        # Adiciona um ID para facilitar o scroll
+        st.markdown('<div id="menu-selecao-parte"></div>', unsafe_allow_html=True)
+        
         # Usar radio buttons como no original
         section_options = {
-            "📋 Parte 1": "perfil",
-            "✏️ Parte 2": "comportamento", 
-            "📊 Resultados": "resultado"
+            "🎯 Parte 1": "perfil",
+            "📊 Parte 2": "comportamento", 
+            "📈 Resultados": "resultado"
         }
-        
-        # Verifica se há uma seção alvo definida pelo menu do final da página
-        target_section = st.session_state.get("target_section_01", None)
-        section_to_process = None  # Variável para armazenar qual seção processar
-        
-        # Verifica também se o menu do final da página mudou
-        bottom_menu_value = st.session_state.get("disc10_section_selector_bottom", None)
-        main_menu_value = st.session_state.get("disc10_section_selector", None)
-        
-        # Função callback para quando o menu principal mudar
-        def on_main_menu_change():
-            """Callback chamado quando o menu principal muda"""
-            selected = st.session_state["disc10_section_selector"]
-            if selected:
-                # Sincroniza com o menu do final da página
-                st.session_state["disc10_section_selector_bottom"] = selected
-                # Limpa a variável auxiliar do menu do final para evitar conflito
-                if "target_section_01" in st.session_state:
-                    del st.session_state["target_section_01"]
-        
-        # Prioridade 1: Se há target_section (do menu do final), usa ela
-        if target_section:
-            section_to_process = target_section
-            # Encontra a opção correspondente à seção alvo
-            target_option = None
-            for option, value in section_options.items():
-                if value == target_section:
-                    target_option = option
-                    break
-            
-            # Se encontrou, atualiza o session_state do menu principal ANTES de criar o widget
-            if target_option:
-                st.session_state["disc10_section_selector"] = target_option
-                # Limpa a variável auxiliar
-                del st.session_state["target_section_01"]
         
         selected_section = st.radio(
             "IMPORTANTE: precisa responder tanto a Parte 1 quanto a Parte 2",
             options=list(section_options.keys()),
             key="disc10_section_selector",
-            horizontal=True,
-            on_change=on_main_menu_change  # Callback quando o menu principal mudar
+            horizontal=True
         )
         
-        # Sincroniza com o menu do final da página (se existir)
-        if selected_section:
-            st.session_state["disc10_section_selector_bottom"] = selected_section
-        
         # Executar a seção selecionada
-        # Se há uma seção alvo (do menu do final), usa ela; senão usa a selecionada pelo menu principal
-        if not section_to_process and selected_section:
-            section_to_process = section_options[selected_section]
-        
-        if section_to_process:
-            process_forms_tab(section_to_process)
+        if selected_section:
+            section_value = section_options[selected_section]
+            process_forms_tab(section_value)
     
     # Para DISC 20 (assessment "02"), usar seções específicas
     elif assessment_id == "02":
@@ -1030,61 +937,22 @@ def show_assessment_execution():
         
         # Usar radio buttons como no original
         section_options = {
-            "📋 Parte 1": "perfil",
-            "✏️ Parte 2": "comportamento", 
-            "📊 Resultados": "resultado"
+            "🎯 Parte 1": "perfil",
+            "📊 Parte 2": "comportamento", 
+            "📈 Resultados": "resultado"
         }
-        
-        # Verifica se há uma seção alvo definida pelo menu do final da página
-        target_section = st.session_state.get("target_section_02", None)
-        section_to_process = None  # Variável para armazenar qual seção processar
-        
-        # Função callback para quando o menu principal mudar
-        def on_main_menu_change():
-            """Callback chamado quando o menu principal muda"""
-            selected = st.session_state["disc20_section_selector"]
-            if selected:
-                # Sincroniza com o menu do final da página
-                st.session_state["disc20_section_selector_bottom"] = selected
-                # Limpa a variável auxiliar do menu do final para evitar conflito
-                if "target_section_02" in st.session_state:
-                    del st.session_state["target_section_02"]
-        
-        # Prioridade 1: Se há target_section (do menu do final), usa ela
-        if target_section:
-            section_to_process = target_section
-            # Encontra a opção correspondente à seção alvo
-            target_option = None
-            for option, value in section_options.items():
-                if value == target_section:
-                    target_option = option
-                    break
-            
-            # Se encontrou, atualiza o session_state do menu principal ANTES de criar o widget
-            if target_option:
-                st.session_state["disc20_section_selector"] = target_option
-                # Limpa a variável auxiliar
-                del st.session_state["target_section_02"]
         
         selected_section = st.radio(
             "Escolha a seção:",
             options=list(section_options.keys()),
             key="disc20_section_selector",
-            horizontal=True,
-            on_change=on_main_menu_change  # Callback quando o menu principal mudar
+            horizontal=True
         )
         
-        # Sincroniza com o menu do final da página (se existir)
-        if selected_section:
-            st.session_state["disc20_section_selector_bottom"] = selected_section
-        
         # Executar a seção selecionada
-        # Se há uma seção alvo (do menu do final), usa ela; senão usa a selecionada pelo menu principal
-        if not section_to_process and selected_section:
-            section_to_process = section_options[selected_section]
-        
-        if section_to_process:
-            process_forms_tab(section_to_process)
+        if selected_section:
+            section_value = section_options[selected_section]
+            process_forms_tab(section_value)
     
     # Para Âncoras de Carreira (assessment "03"), usar seções específicas
     elif assessment_id == "03":
@@ -1093,61 +961,22 @@ def show_assessment_execution():
         
         # Usar radio buttons como no original
         section_options = {
-            "📋 Parte 1": "ancoras_p1",
-            "✏️ Parte 2": "ancoras_p2", 
-            "📊 Resultados": "resultado"
+            "🎯 Parte 1": "ancoras_p1",
+            "📊 Parte 2": "ancoras_p2", 
+            "📈 Resultados": "resultado"
         }
-        
-        # Verifica se há uma seção alvo definida pelo menu do final da página
-        target_section = st.session_state.get("target_section_03", None)
-        section_to_process = None  # Variável para armazenar qual seção processar
-        
-        # Função callback para quando o menu principal mudar
-        def on_main_menu_change():
-            """Callback chamado quando o menu principal muda"""
-            selected = st.session_state["ancoras_section_selector"]
-            if selected:
-                # Sincroniza com o menu do final da página
-                st.session_state["ancoras_section_selector_bottom"] = selected
-                # Limpa a variável auxiliar do menu do final para evitar conflito
-                if "target_section_03" in st.session_state:
-                    del st.session_state["target_section_03"]
-        
-        # Prioridade 1: Se há target_section (do menu do final), usa ela
-        if target_section:
-            section_to_process = target_section
-            # Encontra a opção correspondente à seção alvo
-            target_option = None
-            for option, value in section_options.items():
-                if value == target_section:
-                    target_option = option
-                    break
-            
-            # Se encontrou, atualiza o session_state do menu principal ANTES de criar o widget
-            if target_option:
-                st.session_state["ancoras_section_selector"] = target_option
-                # Limpa a variável auxiliar
-                del st.session_state["target_section_03"]
         
         selected_section = st.radio(
             "IMPORTANTE: Precisa responder tanto a Parte 1 quanto a Parte 2",
             options=list(section_options.keys()),
             key="ancoras_section_selector",
-            horizontal=True,
-            on_change=on_main_menu_change  # Callback quando o menu principal mudar
+            horizontal=True
         )
         
-        # Sincroniza com o menu do final da página (se existir)
-        if selected_section:
-            st.session_state["ancoras_section_selector_bottom"] = selected_section
-        
         # Executar a seção selecionada
-        # Se há uma seção alvo (do menu do final), usa ela; senão usa a selecionada pelo menu principal
-        if not section_to_process and selected_section:
-            section_to_process = section_options[selected_section]
-        
-        if section_to_process:
-            process_forms_tab(section_to_process)
+        if selected_section:
+            section_value = section_options[selected_section]
+            process_forms_tab(section_value)
     
     # Para Armadilhas do Empresário (assessment "04"), usar seções específicas
     elif assessment_id == "04":
@@ -1156,61 +985,22 @@ def show_assessment_execution():
         
         # Usar radio buttons como no original
         section_options = {
-            "📋 Parte 1": "armadilhas_p1",
-            "✏️ Parte 2": "armadilhas_p2", 
-            "📊 Resultados": "resultado"
+            "🎯 Parte 1": "armadilhas_p1",
+            "📊 Parte 2": "armadilhas_p2", 
+            "📈 Resultados": "resultado"
         }
-        
-        # Verifica se há uma seção alvo definida pelo menu do final da página
-        target_section = st.session_state.get("target_section_04", None)
-        section_to_process = None  # Variável para armazenar qual seção processar
-        
-        # Função callback para quando o menu principal mudar
-        def on_main_menu_change():
-            """Callback chamado quando o menu principal muda"""
-            selected = st.session_state["armadilhas_section_selector"]
-            if selected:
-                # Sincroniza com o menu do final da página
-                st.session_state["armadilhas_section_selector_bottom"] = selected
-                # Limpa a variável auxiliar do menu do final para evitar conflito
-                if "target_section_04" in st.session_state:
-                    del st.session_state["target_section_04"]
-        
-        # Prioridade 1: Se há target_section (do menu do final), usa ela
-        if target_section:
-            section_to_process = target_section
-            # Encontra a opção correspondente à seção alvo
-            target_option = None
-            for option, value in section_options.items():
-                if value == target_section:
-                    target_option = option
-                    break
-            
-            # Se encontrou, atualiza o session_state do menu principal ANTES de criar o widget
-            if target_option:
-                st.session_state["armadilhas_section_selector"] = target_option
-                # Limpa a variável auxiliar
-                del st.session_state["target_section_04"]
         
         selected_section = st.radio(
             "IMPORTANTE: Precisa responder tanto a Parte 1 quanto a Parte 2",
             options=list(section_options.keys()),
             key="armadilhas_section_selector",
-            horizontal=True,
-            on_change=on_main_menu_change  # Callback quando o menu principal mudar
+            horizontal=True
         )
         
-        # Sincroniza com o menu do final da página (se existir)
-        if selected_section:
-            st.session_state["armadilhas_section_selector_bottom"] = selected_section
-        
         # Executar a seção selecionada
-        # Se há uma seção alvo (do menu do final), usa ela; senão usa a selecionada pelo menu principal
-        if not section_to_process and selected_section:
-            section_to_process = section_options[selected_section]
-        
-        if section_to_process:
-            process_forms_tab(section_to_process)
+        if selected_section:
+            section_value = section_options[selected_section]
+            process_forms_tab(section_value)
     
     else:
         # Para outros assessments, executar normalmente
@@ -1669,8 +1459,25 @@ def main():
         if not assessment_id:
             return
         
-        # Executar o assessment diretamente
-        show_assessment_execution()
+        # Mostrar opções do assessment selecionado
+        st.markdown("### 📋 Opções do Assessment")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🎯 Realizar Assessment", use_container_width=True):
+                st.session_state["assessment_action"] = "Realizar Assessment"
+        
+        with col2:
+            if st.button("📈 Ver Análises", use_container_width=True):
+                st.session_state["assessment_action"] = "Ver Análises"
+        
+        # Processar ação do assessment
+        assessment_action = st.session_state.get("assessment_action")
+        if assessment_action == "Realizar Assessment":
+            show_assessment_execution()
+        elif assessment_action == "Ver Análises":
+            show_analysis_with_admin_controls()
             
     elif selected_function == "Análises":
         # Para análises, precisa selecionar um assessment primeiro
@@ -1688,24 +1495,6 @@ def main():
 
     # --- FOOTER ---
     st.markdown("<br>" * 1, unsafe_allow_html=True)
-    
-    # Mensagem antes dos logotipos (apenas na página de resultados)
-    selected_function = st.session_state.get("selected_function", "")
-    if selected_function == "Análises":
-        mensagem_resultados = get_texto('resultados_001', 'Dê o próximo passo no desenvolvimento humano e profissional. <br>Converse com Erika Rossi – (11) 99506-6778.')
-        st.markdown(f"""
-            <div style='
-                text-align: center;
-                font-size: 16px;
-                color: #1E1E1E;
-                margin: 20px 0;
-                padding: 15px;
-                line-height: 1.6;
-            '>
-                {mensagem_resultados}
-            </div>
-        """, unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
     
     # Logo do rodapé
     footer_logo_path = os.path.join(current_dir, "Logo_1b.jpg")

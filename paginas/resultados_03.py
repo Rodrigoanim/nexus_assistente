@@ -31,6 +31,8 @@ import io
 import tempfile
 import matplotlib.pyplot as plt
 import traceback
+import re
+import os
 from paginas.monitor import registrar_acesso
 import time
 
@@ -832,7 +834,7 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
         doc = SimpleDocTemplate(
             buffer,
             pagesize=A4,
-            rightMargin=36,
+            rightMargin=50,
             leftMargin=36,
             topMargin=36,
             bottomMargin=36
@@ -910,14 +912,14 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
             
             # Buscar dados das âncoras para o ranking (códigos corretos)
             mapeamento_ancoras_pdf = {
-                'C31': {'nome': 'Competência Técnica / Funcional', 'descricao': 'Desenvolvimento de expertise técnica e especialização profissional', 'arquivo': 'Conteudo/A1_Competencia_Tecnica.md'},
-                'C32': {'nome': 'Gestão Geral', 'descricao': 'Liderança, coordenação e responsabilidade gerencial', 'arquivo': 'Conteudo/A2_Gestao_Geral.md'},
-                'C33': {'nome': 'Autonomia / Independência', 'descricao': 'Liberdade para tomar decisões e trabalhar independentemente', 'arquivo': 'Conteudo/A3_Autonomia_Independencia.md'},
-                'C34': {'nome': 'Segurança / Estabilidade', 'descricao': 'Estabilidade financeira e segurança no emprego', 'arquivo': 'Conteudo/A4_Seguranca_Estabilidade.md'},
-                'D31': {'nome': 'Criatividade Empreendedora', 'descricao': 'Inovação, criação de novos produtos e empreendedorismo', 'arquivo': 'Conteudo/A5_Criatividade_Empreendedora.md'},
-                'D32': {'nome': 'Serviço / Dedicação', 'descricao': 'Contribuição para a sociedade e ajuda aos outros', 'arquivo': 'Conteudo/A6_Servico_Dedicacao.md'},
-                'D33': {'nome': 'Estilo de Vida', 'descricao': 'Equilíbrio entre vida pessoal e profissional', 'arquivo': 'Conteudo/A7_Estilo_Vida.md'},
-                'D34': {'nome': 'Desafio Puro', 'descricao': 'Busca por desafios complexos e competição', 'arquivo': 'Conteudo/A8_Desafio_Puro.md'}
+                'C31': {'nome': 'Competência Técnica / Funcional', 'descricao': 'Desenvolvimento de expertise técnica e especialização profissional', 'arquivo': 'Conteudo/03/A1_Competencia_Tecnica.md'},
+                'C32': {'nome': 'Gestão Geral', 'descricao': 'Liderança, coordenação e responsabilidade gerencial', 'arquivo': 'Conteudo/03/A2_Gestao_Geral.md'},
+                'C33': {'nome': 'Autonomia / Independência', 'descricao': 'Liberdade para tomar decisões e trabalhar independentemente', 'arquivo': 'Conteudo/03/A3_Autonomia_Independencia.md'},
+                'C34': {'nome': 'Segurança / Estabilidade', 'descricao': 'Estabilidade financeira e segurança no emprego', 'arquivo': 'Conteudo/03/A4_Seguranca_Estabilidade.md'},
+                'D31': {'nome': 'Criatividade Empreendedora', 'descricao': 'Inovação, criação de novos produtos e empreendedorismo', 'arquivo': 'Conteudo/03/A5_Criatividade_Empreendedora.md'},
+                'D32': {'nome': 'Serviço / Dedicação', 'descricao': 'Contribuição para a sociedade e ajuda aos outros', 'arquivo': 'Conteudo/03/A6_Servico_Dedicacao.md'},
+                'D33': {'nome': 'Estilo de Vida', 'descricao': 'Equilíbrio entre vida pessoal e profissional', 'arquivo': 'Conteudo/03/A7_Estilo_Vida.md'},
+                'D34': {'nome': 'Desafio Puro', 'descricao': 'Busca por desafios complexos e competição', 'arquivo': 'Conteudo/03/A8_Desafio_Puro.md'}
             }
             
             # Calcular ranking das âncoras
@@ -1184,8 +1186,26 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                 
                 # 3. SEMPRE CARREGAR ABERTURA PRIMEIRO
                 try:
-                    with open('Conteudo/A0_Abertura_Devolutiva.md', 'r', encoding='utf-8') as f:
-                        conteudo_abertura = f.read()
+                    # Tentar diferentes caminhos possíveis para o arquivo
+                    caminhos_abertura = [
+                        'Conteudo/03/A0_Abertura_Devolutiva.md',
+                        os.path.join(os.path.dirname(os.path.dirname(__file__)), 'Conteudo/03/A0_Abertura_Devolutiva.md'),
+                        os.path.join(os.path.dirname(__file__), 'Conteudo/03/A0_Abertura_Devolutiva.md'),
+                    ]
+                    
+                    conteudo_abertura = None
+                    for caminho in caminhos_abertura:
+                        try:
+                            if os.path.exists(caminho):
+                                with open(caminho, 'r', encoding='utf-8') as f:
+                                    conteudo_abertura = f.read()
+                                    break
+                        except Exception:
+                            continue
+                    
+                    if not conteudo_abertura:
+                        raise FileNotFoundError("Arquivo A0_Abertura_Devolutiva.md não encontrado em Conteudo/03/")
+                    
                     # Converter markdown para PDF (com formatação completa)
                     conteudo_formatado = convert_markdown_to_html(conteudo_abertura)
                     linhas_abertura = conteudo_formatado.split('\n')
@@ -1498,7 +1518,7 @@ def show_results(tabela_escolhida: str, titulo_pagina: str, user_id: int):
                                     call_dados(cursor, element, tabela_escolhida)
         
         # 5. Gerar e exibir análise de Âncoras de Carreira
-        with st.expander("Clique aqui para ver sua Análise de Âncoras de Carreira", expanded=False):
+        with st.expander("Análise Detalhada do Assessment", expanded=True):
             st.markdown("---")
             
             # Chama a função que gera e exibe a análise de âncoras
@@ -1660,49 +1680,49 @@ def analisar_ancoras_carreira_streamlit(cursor, user_id):
                 'nome': 'Competência Técnica / Funcional',
                 'descricao': 'Desenvolvimento de expertise técnica e especialização profissional',
                 'cor': '#FF0000',  # Vermelho
-                'arquivo': 'Conteudo/A1_Competencia_Tecnica.md'
+                'arquivo': 'Conteudo/03/A1_Competencia_Tecnica.md'
             },
             'C32': {
                 'nome': 'Gestão Geral',
                 'descricao': 'Liderança, coordenação e responsabilidade gerencial',
                 'cor': '#FF8C00',  # Laranja
-                'arquivo': 'Conteudo/A2_Gestao_Geral.md'
+                'arquivo': 'Conteudo/03/A2_Gestao_Geral.md'
             },
             'C33': {
                 'nome': 'Autonomia / Independência',
                 'descricao': 'Liberdade para tomar decisões e trabalhar independentemente',
                 'cor': '#FFD700',  # Amarelo
-                'arquivo': 'Conteudo/A3_Autonomia_Independencia.md'
+                'arquivo': 'Conteudo/03/A3_Autonomia_Independencia.md'
             },
             'C34': {
                 'nome': 'Segurança / Estabilidade',
                 'descricao': 'Estabilidade financeira e segurança no emprego',
                 'cor': '#00FF00',  # Verde
-                'arquivo': 'Conteudo/A4_Seguranca_Estabilidade.md'
+                'arquivo': 'Conteudo/03/A4_Seguranca_Estabilidade.md'
             },
             'D31': {
                 'nome': 'Criatividade Empreendedora',
                 'descricao': 'Inovação, criação de novos produtos e empreendedorismo',
                 'cor': '#0080FF',  # Azul
-                'arquivo': 'Conteudo/A5_Criatividade_Empreendedora.md'
+                'arquivo': 'Conteudo/03/A5_Criatividade_Empreendedora.md'
             },
             'D32': {
                 'nome': 'Serviço / Dedicação',
                 'descricao': 'Contribuição para a sociedade e ajuda aos outros',
                 'cor': '#4B0082',  # Índigo
-                'arquivo': 'Conteudo/A6_Servico_Dedicacao.md'
+                'arquivo': 'Conteudo/03/A6_Servico_Dedicacao.md'
             },
             'D33': {
                 'nome': 'Estilo de Vida',
                 'descricao': 'Equilíbrio entre vida pessoal e profissional',
                 'cor': '#8A2BE2',  # Violeta
-                'arquivo': 'Conteudo/A7_Estilo_Vida.md'
+                'arquivo': 'Conteudo/03/A7_Estilo_Vida.md'
             },
             'D34': {
                 'nome': 'Desafio Puro',
                 'descricao': 'Busca por desafios complexos e competição',
                 'cor': '#FF1493',  # Rosa/Pink
-                'arquivo': 'Conteudo/A8_Desafio_Puro.md'
+                'arquivo': 'Conteudo/03/A8_Desafio_Puro.md'
             }
         }
         
@@ -1893,7 +1913,7 @@ def analisar_ancoras_carreira_streamlit(cursor, user_id):
         st.markdown("## 📖 Análise das suas Âncoras de Carreira")
         
         # 10.1 SEMPRE CARREGAR ABERTURA PRIMEIRO
-        arquivo_abertura = 'Conteudo/A0_Abertura_Devolutiva.md'
+        arquivo_abertura = 'Conteudo/03/A0_Abertura_Devolutiva.md'
         
         try:
             with open(arquivo_abertura, 'r', encoding='utf-8') as f:

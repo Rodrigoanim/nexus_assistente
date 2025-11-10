@@ -1,5 +1,5 @@
 # Arquivo: create_forms.py
-# Data: 09/10/2025 - 21:00
+# Data: 07/11/2025
 # Tabelas: forms_tab, usuarios
 # Programa roda direto no Python
 # tab usuarios - coluna 'idioma' incluída com valor padrão 'pt'
