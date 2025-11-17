@@ -1,4 +1,4 @@
-# Data: 05/11/2025
+# Data: 15/11/2025
 # IDE Cursor - Auto Agent
 # uv run streamlit run main.py
 # Plataforma com varios assessments
@@ -20,6 +20,14 @@ from paginas.crude import show_crud, manage_assessment_permissions
 from paginas.diagnostico import show_diagnostics
 from paginas.resultados import show_results
 from paginas.resultados_adm import show_resultados_adm
+from paginas.assessment_config import (
+    get_assessment_config,
+    get_form_module_name,
+    get_results_module_name,
+    get_sections,
+    has_menu,
+    get_function_name
+)
 
 # Importações dinâmicas para multi-assessment
 import importlib
@@ -30,14 +38,14 @@ import importlib
 
 # Configuração da página - deve ser a primeira chamada do Streamlit
 st.set_page_config(
-    page_title="C.H.A.V.E. Comportamental - v2.0",  # Título na Aba do Navegador
+    page_title="C.H.A.V.E. Comportamental - v2.1",  # Título na Aba do Navegador
     page_icon="🔑",
     layout="centered",
     menu_items={
         'About': """
         ### Plataforma de Assessments Comportamentais e de Valores
         
-        Versão 2.0 - 04/11/2025
+        Versão 2.1 - 09/11/2025
         
         © 2025 Todos os direitos reservados.
         """,
@@ -102,7 +110,9 @@ def controlar_cadastro_usuarios():
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT DISTINCT assessment_id, assessment_name FROM assessments 
+            SELECT assessment_id, MIN(assessment_name) as assessment_name 
+            FROM assessments 
+            GROUP BY assessment_id
             ORDER BY assessment_id
         """)
         assessments_disponiveis = cursor.fetchall()
@@ -250,7 +260,7 @@ def controlar_cadastro_usuarios():
 def obter_assessments_padrao():
     """
     Obtém a lista de assessments que serão liberados automaticamente para novos usuários
-    Retorna lista de assessment_ids
+    Retorna lista de assessment_ids (limpos e validados)
     """
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -262,7 +272,9 @@ def obter_assessments_padrao():
         conn.close()
         
         if result and result[0]:
-            return result[0].split(',')
+            # Separar por vírgula, limpar espaços e filtrar valores vazios
+            assessments = [a.strip() for a in result[0].split(',') if a.strip()]
+            return assessments
         return []
         
     except Exception as e:
@@ -273,13 +285,46 @@ def normalize_assessment_name(assessment_id, assessment_name):
     Padroniza os nomes exibidos para os assessments nos menus.
     01 -> DISC Essencial
     02 -> DISC Integral
+    03 -> Âncoras de Carreira
+    04 -> Armadilhas do Empresário
+    05 -> Anamnese Completa
     Demais permanecem como estão.
     """
     mapping = {
         "01": "DISC Essencial",
         "02": "DISC Integral",
+        "03": "Âncoras de Carreira",
+        "04": "Armadilhas do Empresário",
+        "05": "Anamnese Completa",
     }
     return mapping.get(str(assessment_id), assessment_name)
+
+def obter_nome_assessment(assessment_id):
+    """
+    Obtém o nome correto do assessment.
+    Primeiro tenta buscar na tabela assessments, depois usa normalize_assessment_name.
+    """
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        # Buscar nome do assessment na tabela (pode ter vários registros, pegar o primeiro)
+        cursor.execute("""
+            SELECT assessment_name FROM assessments 
+            WHERE assessment_id = ? 
+            LIMIT 1
+        """, (assessment_id,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result and result[0] and result[0] != f"Assessment {assessment_id}":
+            # Se encontrou um nome válido (não é o genérico), usar ele
+            return normalize_assessment_name(assessment_id, result[0])
+        else:
+            # Se não encontrou ou é genérico, usar o mapeamento
+            return normalize_assessment_name(assessment_id, f"Assessment {assessment_id}")
+    except Exception as e:
+        # Em caso de erro, usar o mapeamento
+        return normalize_assessment_name(assessment_id, f"Assessment {assessment_id}")
 
 def verificar_cadastro_habilitado():
     """
@@ -470,13 +515,35 @@ def cadastrar_usuario():
                     return
                 
                 # Liberar assessments padrão para o novo usuário
+                # IMPORTANTE: Esta configuração de assessments padrão é aplicada APENAS ao cadastrar
+                # um novo usuário através do formulário "Cadastro de Novo Usuário".
+                # Usuários já cadastrados mantêm suas configurações existentes na tabela assessments.
                 assessments_padrao = obter_assessments_padrao()
+                
+                # Limpar todos os assessments antigos do novo usuário antes de inserir os novos
+                # (Para um novo usuário, não haverá registros, mas garantimos limpeza caso existam)
+                cursor.execute("""
+                    DELETE FROM assessments WHERE user_id = ?
+                """, (novo_user_id,))
+                
                 if assessments_padrao:
+                    # Validar que apenas assessments válidos sejam inseridos
+                    # Verificar se os assessment_ids existem na configuração
+                    from paginas.assessment_config import get_all_assessment_ids
+                    assessment_ids_validos = get_all_assessment_ids()
+                    
                     for assessment_id in assessments_padrao:
+                        # Validar que o assessment_id existe na configuração
+                        if assessment_id not in assessment_ids_validos:
+                            # Pular assessments inválidos (não configurados)
+                            continue
+                        
+                        # Obter nome correto do assessment
+                        assessment_name = obter_nome_assessment(assessment_id)
                         cursor.execute("""
-                            INSERT OR REPLACE INTO assessments (user_id, assessment_id, assessment_name, access_granted)
+                            INSERT INTO assessments (user_id, assessment_id, assessment_name, access_granted)
                             VALUES (?, ?, ?, ?)
-                        """, (novo_user_id, assessment_id, f"Assessment {assessment_id}", 1))
+                        """, (novo_user_id, assessment_id, assessment_name, 1))
                 
                 conn.commit()
                 conn.close()
@@ -764,16 +831,18 @@ def get_user_assessments(user_id):
         # Se for master ou adm, retornar todos os assessments disponíveis
         if user_profile in ["master", "adm"]:
             cursor.execute("""
-                SELECT DISTINCT assessment_id, assessment_name, 1 as access_granted
+                SELECT assessment_id, MIN(assessment_name) as assessment_name, 1 as access_granted
                 FROM assessments 
+                GROUP BY assessment_id
                 ORDER BY assessment_id
             """)
         else:
             # Para outros perfis, verificar permissões específicas
             cursor.execute("""
-                SELECT assessment_id, assessment_name, access_granted
+                SELECT assessment_id, MIN(assessment_name) as assessment_name, MAX(access_granted) as access_granted
                 FROM assessments 
                 WHERE user_id = ? AND access_granted = 1
+                GROUP BY assessment_id
                 ORDER BY assessment_id
             """, (user_id,))
         
@@ -879,34 +948,32 @@ def show_assessment_selector():
 
 def load_assessment_module(assessment_id):
     """
-    Carrega dinamicamente o módulo do assessment selecionado
+    Carrega dinamicamente o módulo do assessment selecionado usando configuração centralizada.
     """
     try:
-        # Mapeamento de assessments para seus módulos
-        assessment_modules = {
-            "01": ("form_model_01", "resultados_01"),
-            "02": ("form_model_02", "resultados_02"),
-            "03": ("form_model_03", "resultados_03"),
-            "04": ("form_model_04", "resultados_04"),
-            "05": ("form_model_05", "resultados_05")
-        }
-        
-        if assessment_id not in assessment_modules:
-            st.error(f"Assessment {assessment_id} não encontrado!")
+        # Obter configuração do assessment
+        config = get_assessment_config(assessment_id)
+        if not config:
+            st.error(f"Assessment {assessment_id} não encontrado na configuração!")
             return None, None, None
         
-        form_module_name, results_module_name = assessment_modules[assessment_id]
+        form_module_name = get_form_module_name(assessment_id)
+        results_module_name = get_results_module_name(assessment_id)
+        
+        if not form_module_name or not results_module_name:
+            st.error(f"Configuração incompleta para assessment {assessment_id}!")
+            return None, None, None
         
         # Carregar módulo do formulário
         form_module = importlib.import_module(f"paginas.{form_module_name}")
         
-        # Determinar o nome da função baseado no assessment_id
-        if assessment_id == "01":
-            function_name = "process_forms_tab"
-        else:
-            function_name = f"process_forms_tab_{assessment_id}"
-        
+        # Usar nome padronizado da função (todos usam process_forms_tab_XX)
+        function_name = get_function_name(assessment_id)
         process_forms_tab = getattr(form_module, function_name, None)
+        
+        if not process_forms_tab:
+            st.error(f"Função {function_name} não encontrada no módulo {form_module_name}!")
+            return None, None, None
         
         # Carregar módulo de resultados
         results_module = importlib.import_module(f"paginas.{results_module_name}")
@@ -928,11 +995,91 @@ def load_assessment_module(assessment_id):
         
     except Exception as e:
         st.error(f"Erro ao carregar módulo do assessment: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return None, None, None
+
+def render_section_menu(assessment_id, config, process_forms_tab):
+    """
+    Renderiza menu genérico de seleção de seções para um assessment.
+    
+    Args:
+        assessment_id: ID do assessment
+        config: Configuração do assessment
+        process_forms_tab: Função para processar a seção selecionada
+    """
+    sections = config.get("sections", {})
+    selector_key = config.get("selector_key")
+    selector_bottom_key = config.get("selector_bottom_key")
+    target_section_key = config.get("target_section_key")
+    menu_title = config.get("menu_title", "#### 📋 Selecione a Parte que deseja")
+    menu_message = config.get("menu_message", "Escolha a seção:")
+    
+    # Exibir título do menu
+    if menu_title:
+        st.markdown(menu_title)
+    
+    # Verifica se há uma seção alvo definida pelo menu do final da página
+    target_section = st.session_state.get(target_section_key, None)
+    section_to_process = None
+    
+    # Função callback para quando o menu principal mudar
+    def on_main_menu_change():
+        """Callback chamado quando o menu principal muda"""
+        selected = st.session_state[selector_key]
+        if selected:
+            # Sincroniza com o menu do final da página
+            if selector_bottom_key:
+                st.session_state[selector_bottom_key] = selected
+            # Limpa a variável auxiliar do menu do final para evitar conflito
+            if target_section_key and target_section_key in st.session_state:
+                del st.session_state[target_section_key]
+    
+    # Prioridade 1: Se há target_section (do menu do final), usa ela
+    if target_section:
+        section_to_process = target_section
+        # Encontra a opção correspondente à seção alvo
+        target_option = None
+        for option, value in sections.items():
+            if value == target_section:
+                target_option = option
+                break
+        
+        # Se encontrou, atualiza o session_state do menu principal ANTES de criar o widget
+        if target_option:
+            st.session_state[selector_key] = target_option
+            # Limpa a variável auxiliar
+            if target_section_key in st.session_state:
+                del st.session_state[target_section_key]
+    
+    selected_section = st.radio(
+        menu_message,
+        options=list(sections.keys()),
+        key=selector_key,
+        horizontal=True,
+        on_change=on_main_menu_change
+    )
+    
+    # Sincroniza com o menu do final da página (se existir)
+    # Só sincroniza se o widget do menu do final ainda não foi criado
+    # Isso evita o erro "widget created with default value but also had its value set via Session State API"
+    if selected_section and selector_bottom_key:
+        # Verifica se o widget do menu do final já existe no session_state
+        # Se não existir, define o valor para sincronização inicial
+        # Se existir, deixa o callback do form_model gerenciar
+        if selector_bottom_key not in st.session_state:
+            st.session_state[selector_bottom_key] = selected_section
+    
+    # Executar a seção selecionada
+    if not section_to_process and selected_section:
+        section_to_process = sections[selected_section]
+    
+    if section_to_process:
+        process_forms_tab(section_to_process)
 
 def show_assessment_execution():
     """
-    Executa o assessment selecionado
+    Executa o assessment selecionado usando configuração centralizada.
     """
     assessment_id = st.session_state.get("selected_assessment_id")
     user_id = st.session_state.get("user_id")
@@ -947,6 +1094,12 @@ def show_assessment_execution():
         st.info("💡 **Solução:** Entre em contato com o administrador para solicitar acesso.")
         return
     
+    # Obter configuração do assessment
+    config = get_assessment_config(assessment_id)
+    if not config:
+        st.error(f"❌ **Erro:** Configuração não encontrada para assessment {assessment_id}.")
+        return
+    
     # Carregar módulo do assessment
     process_forms_tab, show_results, assessment_name = load_assessment_module(assessment_id)
     
@@ -956,264 +1109,12 @@ def show_assessment_execution():
     
     st.markdown(f"### 🎯 {assessment_name}")
     
-    # Para DISC Essencial (assessment "01"), usar seções específicas
-    if assessment_id == "01":
-        # Mapeamento específico para DISC Essencial 
-        st.markdown("#### 📋 Selecione a Parte que deseja")
-        
-        # Usar radio buttons como no original
-        section_options = {
-            "📋 Parte 1": "perfil",
-            "✏️ Parte 2": "comportamento", 
-            "📊 Resultados": "resultado"
-        }
-        
-        # Verifica se há uma seção alvo definida pelo menu do final da página
-        target_section = st.session_state.get("target_section_01", None)
-        section_to_process = None  # Variável para armazenar qual seção processar
-        
-        # Verifica também se o menu do final da página mudou
-        bottom_menu_value = st.session_state.get("disc10_section_selector_bottom", None)
-        main_menu_value = st.session_state.get("disc10_section_selector", None)
-        
-        # Função callback para quando o menu principal mudar
-        def on_main_menu_change():
-            """Callback chamado quando o menu principal muda"""
-            selected = st.session_state["disc10_section_selector"]
-            if selected:
-                # Sincroniza com o menu do final da página
-                st.session_state["disc10_section_selector_bottom"] = selected
-                # Limpa a variável auxiliar do menu do final para evitar conflito
-                if "target_section_01" in st.session_state:
-                    del st.session_state["target_section_01"]
-        
-        # Prioridade 1: Se há target_section (do menu do final), usa ela
-        if target_section:
-            section_to_process = target_section
-            # Encontra a opção correspondente à seção alvo
-            target_option = None
-            for option, value in section_options.items():
-                if value == target_section:
-                    target_option = option
-                    break
-            
-            # Se encontrou, atualiza o session_state do menu principal ANTES de criar o widget
-            if target_option:
-                st.session_state["disc10_section_selector"] = target_option
-                # Limpa a variável auxiliar
-                del st.session_state["target_section_01"]
-        
-        selected_section = st.radio(
-            "IMPORTANTE: precisa responder tanto a Parte 1 quanto a Parte 2",
-            options=list(section_options.keys()),
-            key="disc10_section_selector",
-            horizontal=True,
-            on_change=on_main_menu_change  # Callback quando o menu principal mudar
-        )
-        
-        # Sincroniza com o menu do final da página (se existir)
-        if selected_section:
-            st.session_state["disc10_section_selector_bottom"] = selected_section
-        
-        # Executar a seção selecionada
-        # Se há uma seção alvo (do menu do final), usa ela; senão usa a selecionada pelo menu principal
-        if not section_to_process and selected_section:
-            section_to_process = section_options[selected_section]
-        
-        if section_to_process:
-            process_forms_tab(section_to_process)
-    
-    # Para DISC 20 (assessment "02"), usar seções específicas
-    elif assessment_id == "02":
-        # Mapeamento específico para DISC 20 - usar seções corretas
-        st.markdown("#### 📋 Selecione a seção que deseja responder")
-        
-        # Usar radio buttons como no original
-        section_options = {
-            "📋 Parte 1": "perfil",
-            "✏️ Parte 2": "comportamento", 
-            "📊 Resultados": "resultado"
-        }
-        
-        # Verifica se há uma seção alvo definida pelo menu do final da página
-        target_section = st.session_state.get("target_section_02", None)
-        section_to_process = None  # Variável para armazenar qual seção processar
-        
-        # Função callback para quando o menu principal mudar
-        def on_main_menu_change():
-            """Callback chamado quando o menu principal muda"""
-            selected = st.session_state["disc20_section_selector"]
-            if selected:
-                # Sincroniza com o menu do final da página
-                st.session_state["disc20_section_selector_bottom"] = selected
-                # Limpa a variável auxiliar do menu do final para evitar conflito
-                if "target_section_02" in st.session_state:
-                    del st.session_state["target_section_02"]
-        
-        # Prioridade 1: Se há target_section (do menu do final), usa ela
-        if target_section:
-            section_to_process = target_section
-            # Encontra a opção correspondente à seção alvo
-            target_option = None
-            for option, value in section_options.items():
-                if value == target_section:
-                    target_option = option
-                    break
-            
-            # Se encontrou, atualiza o session_state do menu principal ANTES de criar o widget
-            if target_option:
-                st.session_state["disc20_section_selector"] = target_option
-                # Limpa a variável auxiliar
-                del st.session_state["target_section_02"]
-        
-        selected_section = st.radio(
-            "Escolha a seção:",
-            options=list(section_options.keys()),
-            key="disc20_section_selector",
-            horizontal=True,
-            on_change=on_main_menu_change  # Callback quando o menu principal mudar
-        )
-        
-        # Sincroniza com o menu do final da página (se existir)
-        if selected_section:
-            st.session_state["disc20_section_selector_bottom"] = selected_section
-        
-        # Executar a seção selecionada
-        # Se há uma seção alvo (do menu do final), usa ela; senão usa a selecionada pelo menu principal
-        if not section_to_process and selected_section:
-            section_to_process = section_options[selected_section]
-        
-        if section_to_process:
-            process_forms_tab(section_to_process)
-    
-    # Para Âncoras de Carreira (assessment "03"), usar seções específicas
-    elif assessment_id == "03":
-        # Mapeamento específico para Âncoras - usar seções corretas
-        st.markdown("#### 📋 Selecione a Parte que deseja")
-        
-        # Usar radio buttons como no original
-        section_options = {
-            "📋 Parte 1": "ancoras_p1",
-            "✏️ Parte 2": "ancoras_p2", 
-            "📊 Resultados": "resultado"
-        }
-        
-        # Verifica se há uma seção alvo definida pelo menu do final da página
-        target_section = st.session_state.get("target_section_03", None)
-        section_to_process = None  # Variável para armazenar qual seção processar
-        
-        # Função callback para quando o menu principal mudar
-        def on_main_menu_change():
-            """Callback chamado quando o menu principal muda"""
-            selected = st.session_state["ancoras_section_selector"]
-            if selected:
-                # Sincroniza com o menu do final da página
-                st.session_state["ancoras_section_selector_bottom"] = selected
-                # Limpa a variável auxiliar do menu do final para evitar conflito
-                if "target_section_03" in st.session_state:
-                    del st.session_state["target_section_03"]
-        
-        # Prioridade 1: Se há target_section (do menu do final), usa ela
-        if target_section:
-            section_to_process = target_section
-            # Encontra a opção correspondente à seção alvo
-            target_option = None
-            for option, value in section_options.items():
-                if value == target_section:
-                    target_option = option
-                    break
-            
-            # Se encontrou, atualiza o session_state do menu principal ANTES de criar o widget
-            if target_option:
-                st.session_state["ancoras_section_selector"] = target_option
-                # Limpa a variável auxiliar
-                del st.session_state["target_section_03"]
-        
-        selected_section = st.radio(
-            "IMPORTANTE: Precisa responder tanto a Parte 1 quanto a Parte 2",
-            options=list(section_options.keys()),
-            key="ancoras_section_selector",
-            horizontal=True,
-            on_change=on_main_menu_change  # Callback quando o menu principal mudar
-        )
-        
-        # Sincroniza com o menu do final da página (se existir)
-        if selected_section:
-            st.session_state["ancoras_section_selector_bottom"] = selected_section
-        
-        # Executar a seção selecionada
-        # Se há uma seção alvo (do menu do final), usa ela; senão usa a selecionada pelo menu principal
-        if not section_to_process and selected_section:
-            section_to_process = section_options[selected_section]
-        
-        if section_to_process:
-            process_forms_tab(section_to_process)
-    
-    # Para Armadilhas do Empresário (assessment "04"), usar seções específicas
-    elif assessment_id == "04":
-        # Mapeamento específico para Armadilhas - usar seções corretas
-        st.markdown("#### 📋 Selecione a Parte que deseja")
-        
-        # Usar radio buttons como no original
-        section_options = {
-            "📋 Parte 1": "armadilhas_p1",
-            "✏️ Parte 2": "armadilhas_p2", 
-            "📊 Resultados": "resultado"
-        }
-        
-        # Verifica se há uma seção alvo definida pelo menu do final da página
-        target_section = st.session_state.get("target_section_04", None)
-        section_to_process = None  # Variável para armazenar qual seção processar
-        
-        # Função callback para quando o menu principal mudar
-        def on_main_menu_change():
-            """Callback chamado quando o menu principal muda"""
-            selected = st.session_state["armadilhas_section_selector"]
-            if selected:
-                # Sincroniza com o menu do final da página
-                st.session_state["armadilhas_section_selector_bottom"] = selected
-                # Limpa a variável auxiliar do menu do final para evitar conflito
-                if "target_section_04" in st.session_state:
-                    del st.session_state["target_section_04"]
-        
-        # Prioridade 1: Se há target_section (do menu do final), usa ela
-        if target_section:
-            section_to_process = target_section
-            # Encontra a opção correspondente à seção alvo
-            target_option = None
-            for option, value in section_options.items():
-                if value == target_section:
-                    target_option = option
-                    break
-            
-            # Se encontrou, atualiza o session_state do menu principal ANTES de criar o widget
-            if target_option:
-                st.session_state["armadilhas_section_selector"] = target_option
-                # Limpa a variável auxiliar
-                del st.session_state["target_section_04"]
-        
-        selected_section = st.radio(
-            "IMPORTANTE: Precisa responder tanto a Parte 1 quanto a Parte 2",
-            options=list(section_options.keys()),
-            key="armadilhas_section_selector",
-            horizontal=True,
-            on_change=on_main_menu_change  # Callback quando o menu principal mudar
-        )
-        
-        # Sincroniza com o menu do final da página (se existir)
-        if selected_section:
-            st.session_state["armadilhas_section_selector_bottom"] = selected_section
-        
-        # Executar a seção selecionada
-        # Se há uma seção alvo (do menu do final), usa ela; senão usa a selecionada pelo menu principal
-        if not section_to_process and selected_section:
-            section_to_process = section_options[selected_section]
-        
-        if section_to_process:
-            process_forms_tab(section_to_process)
-    
+    # Verificar se o assessment tem menu de seções
+    if has_menu(assessment_id):
+        # Renderizar menu genérico de seções
+        render_section_menu(assessment_id, config, process_forms_tab)
     else:
-        # Para outros assessments, executar normalmente
+        # Executar diretamente sem menu (para assessments que não precisam de seleção de seções)
         process_forms_tab()
 
 def show_assessment_results():
@@ -1244,7 +1145,7 @@ def show_assessment_results():
     
     # Mostrar resultados
     tabela_escolhida = f"forms_resultados_{assessment_id}"
-    titulo_pagina = f"Análise das Avaliações - {assessment_name}"
+    titulo_pagina = f"Análise: {assessment_name}"
     
     show_results(tabela_escolhida, titulo_pagina, user_id)
 
@@ -1529,7 +1430,7 @@ def show_analysis_with_admin_controls():
                 
                 if show_results:
                     tabela_escolhida = f"forms_resultados_{selected_assessment}"
-                    titulo_pagina = f"Análise Administrativa - {admin_user_name} - {assessment_name}"
+                    titulo_pagina = f"Análise Administrativa - {admin_user_name} - {assessment_name} - v2.1"
                     show_results(tabela_escolhida, titulo_pagina, admin_user_id)
                 else:
                     st.error("❌ **Erro:** Não foi possível carregar o módulo de resultados.")
@@ -1556,7 +1457,7 @@ def show_analysis_with_admin_controls():
         
         # Mostrar resultados do assessment selecionado
         tabela_escolhida = f"forms_resultados_{assessment_id}"
-        titulo_pagina = f"Análise das Avaliações - {assessment_name}"
+        titulo_pagina = f"Análise: {assessment_name}"
         
         show_results(tabela_escolhida, titulo_pagina, current_user_id)
 

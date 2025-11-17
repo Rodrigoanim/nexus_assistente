@@ -1,17 +1,17 @@
 # ARCHIVO: variavel_texto_es.txt
-# Sistema de Anclas de Carrera - Textos Externos
-# Fecha: 03/08/2025 - Transición del proyecto DISC a Anclas de Carrera
+# Plataforma: C.H.A.V.E. Comportamental - Textos Español
+# Fecha: 09/11/2025
 # 
 # CONVENCIÓN: [nombre_archivo]_[secuencial_3_dígitos]
 #
 # ================================================================
 
 # === CONFIGURACIÓN GENERAL ===
-app_title=Plataforma de Anclas de Carrera - v1.1
-app_about=Sistema de Evaluación de Anclas de Carrera - Versión 1.0a - 03/08/2025
+app_title=Plataforma C.H.A.V.E. Comportamental - v2.1
+app_about=Sistema de Assessments - 09/11/2025
 
 # === MAIN.PY - PANTALLA DE LOGIN ===
-main_001=Plataforma Comportamental
+main_001=Plataforma C.H.A.V.E. Comportamental v2.1
 main_002=Correo electrónico
 main_003=Contraseña
 main_004=Declaro que he leído y acepto los [términos de uso de la herramienta](https://ag93eventos.com.br/ear/Termos_Uso_DISC.pdf)

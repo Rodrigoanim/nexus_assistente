@@ -1,5 +1,5 @@
 # resultados_02.py
-# Data: 05/11/2025
+# Data: 15/11/2025
 # Pagina de resultados e Analises - Dashboard.
 # Tabela: forms_resultados_02
 
@@ -39,12 +39,12 @@ from config import DB_PATH  # Adicione esta importação
 
 # Dicionário de títulos para cada tabela
 TITULOS_TABELAS = {
-    "forms_resultados_02": "Análise: Avaliação DISC"
+    "forms_resultados_02": "Análise: DISC 20 Perguntas"
 }
 
 # Dicionário de subtítulos para cada tabela
 SUBTITULOS_TABELAS = {
-    "forms_resultados_02": "Avaliação de Perfis"
+    "forms_resultados_02": "Avaliação de DISC 20 Perguntas"
 }
 
 def format_br_number(value):
@@ -666,7 +666,7 @@ def subtitulo(titulo_pagina: str):
                         st.download_button(
                             label="Baixar PDF",
                             data=buffer.getvalue(),
-                            file_name="simulacoes.pdf",
+                            file_name="DISC_20_Perguntas_Analise.pdf",
                             mime="application/pdf",
                         )
                     

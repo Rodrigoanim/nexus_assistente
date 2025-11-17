@@ -691,7 +691,7 @@ def subtitulo(titulo_pagina: str):
                         st.download_button(
                             label="Baixar PDF",
                             data=buffer.getvalue(),
-                            file_name="Ancoras_de_Carreira.pdf",
+                            file_name="Anamnese_Completa_Analise.pdf",
                             mime="application/pdf",
                         )
                     

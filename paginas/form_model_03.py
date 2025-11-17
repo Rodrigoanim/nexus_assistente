@@ -968,7 +968,19 @@ def process_forms_tab_03(section='ancoras_p1'):
             
             # Se não encontrou, usa a primeira opção
             options_list = list(section_options.keys())
-            initial_index = options_list.index(current_option) if current_option in options_list else 0
+            
+            # Prepara parâmetros do radio
+            radio_params = {
+                "label": "IMPORTANTE: Precisa responder tanto a Parte 1 quanto a Parte 2",
+                "options": options_list,
+                "key": "ancoras_section_selector_bottom",  # Key diferente para evitar conflito
+                "horizontal": True,
+            }
+            
+            # Só usa index se não houver valor no session_state (evita conflito)
+            if "ancoras_section_selector_bottom" not in st.session_state:
+                initial_index = options_list.index(current_option) if current_option in options_list else 0
+                radio_params["index"] = initial_index
             
             # Função callback para quando o menu do final da página mudar
             def on_bottom_menu_change():
@@ -978,17 +990,11 @@ def process_forms_tab_03(section='ancoras_p1'):
                     section_value = section_options[selected]
                     # Atualiza a variável auxiliar que será lida pelo main.py
                     st.session_state["target_section_03"] = section_value
-                    # Força rerun para que o main.py processe a mudança
-                    st.rerun()
+                    # NOTA: Não usar st.rerun() aqui - o Streamlit já faz rerun automaticamente
             
-            selected_section = st.radio(
-                "IMPORTANTE: Precisa responder tanto a Parte 1 quanto a Parte 2",
-                options=options_list,
-                key="ancoras_section_selector_bottom",  # Key diferente para evitar conflito
-                horizontal=True,
-                index=initial_index,
-                on_change=on_bottom_menu_change  # Callback quando mudar
-            )
+            radio_params["on_change"] = on_bottom_menu_change
+            
+            selected_section = st.radio(**radio_params)
 
     except Exception as e:
         st.error(f"Erro ao processar formulário: {str(e)}")

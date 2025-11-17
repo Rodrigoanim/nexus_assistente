@@ -1,17 +1,17 @@
 # ARQUIVO: variavel_texto.txt
 # Plataforma: C.H.A.V.E. Comportamental - Textos Português
-# Data: 04/11/2025 
+# Data: 09/11/2025 
 # 
 # CONVENÇÃO: [nome_arquivo]_[sequencial_3_digitos]
 #
 # ================================================================
 
 # === CONFIGURAÇÃO GERAL ===
-app_title=Plataforma C.H.A.V.E. Comportamental v2.0.
-app_about=Sistema de Assessments - 04/11/2025
+app_title=Plataforma C.H.A.V.E. Comportamental v2.1.
+app_about=Sistema de Assessments - 09/11/2025
 
 # === MAIN.PY - TELA DE LOGIN ===
-main_001=Plataforma C.H.A.V.E. Comportamental  v2.0
+main_001=Plataforma C.H.A.V.E. Comportamental  v2.1
 main_002=E-mail
 main_003=Senha
 main_004=Declaro que li e aceito os [termos de uso da Plataforma](https://ag93eventos.com.br/ear/Termos_Uso_DISC.pdf)

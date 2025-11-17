@@ -1,5 +1,5 @@
 # resultados.py
-# Data: 01/08/2025 - 22h00
+# Data: 15/11/2025 
 # Pagina de resultados e Analises - Dashboard.
 # Tabela: forms_resultados_03
 
@@ -45,7 +45,7 @@ TITULOS_TABELAS = {
 
 # Dicionário de subtítulos para cada tabela
 SUBTITULOS_TABELAS = {
-    "forms_resultados_03": "Avaliação de Âncoras de Carreira"
+    "forms_resultados_03": "Análise: Âncoras de Carreira"
 }
 
 def format_br_number(value):
@@ -695,7 +695,7 @@ def subtitulo(titulo_pagina: str):
                         st.download_button(
                             label="Baixar PDF",
                             data=buffer.getvalue(),
-                            file_name="Ancoras_de_Carreira.pdf",
+                            file_name="Ancoras_de_Carreira_Analise.pdf",
                             mime="application/pdf",
                         )
                     

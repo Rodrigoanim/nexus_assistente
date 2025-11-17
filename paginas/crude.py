@@ -1,5 +1,5 @@
 # Arquivo: crude.py
-# Data: 21/09/2025  16:00
+# Data: 09/11/2025 
 # IDE Cursor - Auto Agent
 # Adaptação para o sistema de múltiplos assessments
 # Download o banco de dados: calcrh2.db 
@@ -53,8 +53,9 @@ def get_assessment_info():
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT DISTINCT assessment_id, assessment_name 
+            SELECT assessment_id, MIN(assessment_name) as assessment_name 
             FROM assessments 
+            GROUP BY assessment_id
             ORDER BY assessment_id
         """)
         
@@ -112,8 +113,9 @@ def manage_assessment_permissions():
         
         # Buscar todos os assessments
         cursor.execute("""
-            SELECT DISTINCT assessment_id, assessment_name 
+            SELECT assessment_id, MIN(assessment_name) as assessment_name 
             FROM assessments 
+            GROUP BY assessment_id
             ORDER BY assessment_id
         """)
         assessments = cursor.fetchall()

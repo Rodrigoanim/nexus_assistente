@@ -1,5 +1,5 @@
 # resultados_04.py
-# Data: 20/09/2025 - 17:00
+# Data: 15/11/2025 
 # Pagina de resultados e Analises - Dashboard.
 # Tabela: forms_resultados_04
 
@@ -40,12 +40,12 @@ from config import DB_PATH  # Adicione esta importação
 
 # Dicionário de títulos para cada tabela
 TITULOS_TABELAS = {
-    "forms_resultados_04": "Análise: 7 Armadilhas do Eu Empresário"
+    "forms_resultados_04": "Análise: Armadilhas do Empresário"
 }
 
 # Dicionário de subtítulos para cada tabela
 SUBTITULOS_TABELAS = {
-    "forms_resultados_04": "Avaliação de Vulnerabilidade"
+    "forms_resultados_04": "Análise:Armadilhas do Empresário"
 }
 
 def format_br_number(value):
@@ -667,7 +667,7 @@ def subtitulo(titulo_pagina: str):
                         st.download_button(
                             label="Baixar PDF",
                             data=buffer.getvalue(),
-                            file_name="simulacoes.pdf",
+                            file_name="Armadilhas_Empresario_Analise.pdf",
                             mime="application/pdf",
                         )
                     

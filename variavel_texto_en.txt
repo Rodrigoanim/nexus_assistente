@@ -1,17 +1,17 @@
 # FILE: variavel_texto_en.txt
-# Career Anchor System - External Texts
-# Date: 03/08/2025 - Transition from DISC project to Career Anchor
+# Platform: C.H.A.V.E. Behavioral - English Texts
+# Date: 09/11/2025
 # 
 # CONVENTION: [file_name]_[sequential_3_digits]
 #
 # ================================================================
 
 # === GENERAL CONFIGURATION ===
-app_title=Career Anchor Platform - v1.1
-app_about=Career Anchor Assessment System - Version 1.0a - 03/08/2025
+app_title=C.H.A.V.E. Behavioral Platform - v2.1
+app_about=Assessment System - 09/11/2025
 
 # === MAIN.PY - LOGIN SCREEN ===
-main_001=Behavioral Platform
+main_001=C.H.A.V.E. Behavioral Platform v2.1
 main_002=E-mail
 main_003=Password
 main_004=I declare that I have read and accept the [terms of use of the tool](https://ag93eventos.com.br/ear/Termos_Uso_DISC.pdf)

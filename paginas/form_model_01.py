@@ -1,6 +1,6 @@
 # Arquivo: form_model_01.py
 # DISC Essencial - 10 Perguntas
-# 07/11/2025 
+# 9/11/2025 
 
 
 import sqlite3
@@ -967,7 +967,20 @@ def process_forms_tab_01(section='perfil'):
                 
                 # Se não encontrou, usa a primeira opção
                 options_list = list(section_options.keys())
-                initial_index = options_list.index(current_option) if current_option in options_list else 0
+                
+                # Verifica se já existe um valor no session_state para evitar conflito
+                # Se não existir, usa o índice calculado
+                radio_params = {
+                    "label": "IMPORTANTE: precisa responder tanto a Parte 1 quanto a Parte 2",
+                    "options": options_list,
+                    "key": "disc10_section_selector_bottom",  # Key diferente para evitar conflito
+                    "horizontal": True,
+                }
+                
+                # Só usa index se não houver valor no session_state
+                if "disc10_section_selector_bottom" not in st.session_state:
+                    initial_index = options_list.index(current_option) if current_option in options_list else 0
+                    radio_params["index"] = initial_index
                 
                 # Função callback para quando o menu do final da página mudar
                 def on_bottom_menu_change():
@@ -977,17 +990,11 @@ def process_forms_tab_01(section='perfil'):
                         section_value = section_options[selected]
                         # Atualiza a variável auxiliar que será lida pelo main.py
                         st.session_state["target_section_01"] = section_value
-                        # Força rerun para que o main.py processe a mudança
-                        st.rerun()
+                        # NOTA: Não usar st.rerun() aqui - o Streamlit já faz rerun automaticamente
                 
-                selected_section = st.radio(
-                    "IMPORTANTE: precisa responder tanto a Parte 1 quanto a Parte 2",
-                    options=options_list,
-                    key="disc10_section_selector_bottom",  # Key diferente para evitar conflito
-                    horizontal=True,
-                    index=initial_index,
-                    on_change=on_bottom_menu_change  # Callback quando mudar
-                )
+                radio_params["on_change"] = on_bottom_menu_change
+                
+                selected_section = st.radio(**radio_params)
 
     except Exception as e:
         st.error(f"Erro ao processar formulário: {str(e)}")
@@ -1063,11 +1070,8 @@ def call_insumos(cursor, element):
         st.error(f"Erro inesperado ao processar referência: {str(e)}")
         return 0.0
 
-def process_forms_tab(section='perfil'):
-    """
-    Função wrapper para compatibilidade com main.py
-    Chama process_forms_tab_01 com a seção especificada
-    """
-    return process_forms_tab_01(section)
+# Função padronizada: process_forms_tab_01() é usada diretamente
+# Removida função wrapper process_forms_tab() para manter consistência
+# Todos os assessments agora usam process_forms_tab_XX() (incluindo 01)
 
 
