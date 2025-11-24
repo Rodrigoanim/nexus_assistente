@@ -1,6 +1,6 @@
 # Arquivo: create_forms_01.py
-# Data: 07/11/2025
-# Importação: forms_tab_01 (DISC 10)
+# Data: 21/11/2025
+# Importação: forms_tab_01 (DISC Essencial - 10 Perguntas)
 # Programa para importar dados do arquivo TXT para formato multi-assessment
 
 import sqlite3

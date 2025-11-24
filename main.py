@@ -1,4 +1,4 @@
-# Data: 15/11/2025
+# Data: 23/11/2025
 # IDE Cursor - Auto Agent
 # uv run streamlit run main.py
 # Plataforma com varios assessments
@@ -38,7 +38,7 @@ import importlib
 
 # Configuração da página - deve ser a primeira chamada do Streamlit
 st.set_page_config(
-    page_title="C.H.A.V.E. Comportamental - v2.1",  # Título na Aba do Navegador
+    page_title="C.H.A.V.E. Comportamental - v2.2",  # Título na Aba do Navegador
     page_icon="🔑",
     layout="centered",
     menu_items={
@@ -716,8 +716,9 @@ def authenticate_user():
                     email = st.text_input(get_texto('main_002', 'E-mail', user_id=temp_user_id), key="email")
                     password = st.text_input(get_texto('main_003', 'Senha', user_id=temp_user_id), type="password", key="password")
 
+                    st.markdown(get_texto('main_004', 'Declaro que li e aceito os termos de uso', user_id=temp_user_id))
                     aceite_termos = st.checkbox(
-                        get_texto('main_004', 'Declaro que li e aceito os termos de uso', user_id=temp_user_id),
+                        "✓ Aceito os termos de uso",
                         key='aceite_termos'
                     )
 
@@ -1430,7 +1431,7 @@ def show_analysis_with_admin_controls():
                 
                 if show_results:
                     tabela_escolhida = f"forms_resultados_{selected_assessment}"
-                    titulo_pagina = f"Análise Administrativa - {admin_user_name} - {assessment_name} - v2.1"
+                    titulo_pagina = f"Análise Administrativa - {admin_user_name} - {assessment_name} - v2.2"
                     show_results(tabela_escolhida, titulo_pagina, admin_user_id)
                 else:
                     st.error("❌ **Erro:** Não foi possível carregar o módulo de resultados.")
@@ -1544,7 +1545,7 @@ def main():
     # Verificar qual função foi selecionada
     selected_function = st.session_state.get("selected_function")
     if not selected_function:
-        st.info("💡 **Selecione uma opção acima para continuar.**")
+        st.info("💡 **Clique em Assessment para começar sua avaliação.**")
         return
 
     # Verificar se há retorno ao módulo administrativo

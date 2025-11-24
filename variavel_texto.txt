@@ -1,20 +1,20 @@
 # ARQUIVO: variavel_texto.txt
 # Plataforma: C.H.A.V.E. Comportamental - Textos Português
-# Data: 09/11/2025 
+# Data: 23/11/2025 
 # 
 # CONVENÇÃO: [nome_arquivo]_[sequencial_3_digitos]
 #
 # ================================================================
 
 # === CONFIGURAÇÃO GERAL ===
-app_title=Plataforma C.H.A.V.E. Comportamental v2.1.
-app_about=Sistema de Assessments - 09/11/2025
+app_title=Plataforma C.H.A.V.E. Comportamental v2.2.
+app_about=Sistema de Assessments - 23/11/2025
 
 # === MAIN.PY - TELA DE LOGIN ===
-main_001=Plataforma C.H.A.V.E. Comportamental  v2.1
+main_001=Plataforma C.H.A.V.E. Comportamental  v2.2
 main_002=E-mail
 main_003=Senha
-main_004=Declaro que li e aceito os [termos de uso da Plataforma](https://ag93eventos.com.br/ear/Termos_Uso_DISC.pdf)
+main_004=Declaro que li e aceito os [termos de uso da Plataforma](https://ag93eventos.com.br/ear/Termo%20de%20Uso%20da%20Plataforma%20CHAVE.pdf)
 main_005=Entrar
 main_006=Você deve aceitar os termos de uso para continuar.
 main_007=E-mail ou senha inválidos. Por favor, verifique seus dados e tente novamente.
@@ -30,7 +30,7 @@ main_012 = Partindo da compreensão profunda de um dos maiores desafios contempo
 
 # === MAIN.PY - HEADER APLICAÇÃO ===
 main_013=C.H.A.V.E. Comportamental 
-main_013a=Plataforma viva para diagnóstico, desenvolvimento e alinhamento do comportamento humano a vida pessoal, profissional e ao negócio
+main_013a=Plataforma viva para diagnóstico e desenvolvimento do comportamento humano a vida pessoal, profissional e ao negócio
 main_014=Informações do Usuário / Logout
 main_015=**Usuário:**
 main_016=**ID:**

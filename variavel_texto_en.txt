@@ -7,14 +7,14 @@
 # ================================================================
 
 # === GENERAL CONFIGURATION ===
-app_title=C.H.A.V.E. Behavioral Platform - v2.1
+app_title=C.H.A.V.E. Behavioral Platform - v2.2
 app_about=Assessment System - 09/11/2025
 
 # === MAIN.PY - LOGIN SCREEN ===
-main_001=C.H.A.V.E. Behavioral Platform v2.1
+main_001=C.H.A.V.E. Behavioral Platform v2.2
 main_002=E-mail
 main_003=Password
-main_004=I declare that I have read and accept the [terms of use of the tool](https://ag93eventos.com.br/ear/Termos_Uso_DISC.pdf)
+main_004=I declare that I have read and accept the [terms of use of the tool](https://ag93eventos.com.br/ear/Termo_de_Uso - Multi-Assessments.pdf)
 main_005=Enter
 main_006=You must accept the terms of use to continue.
 main_007=Invalid email or password. Please check your data and try again.

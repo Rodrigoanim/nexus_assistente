@@ -1,8 +1,7 @@
-# resultados_01.py
-# Data: 21/11/2025
+# resultados_02.py
+# Data: 15/11/2025
 # Pagina de resultados e Analises - Dashboard.
-# Tabela: forms_resultados_01
-# Assessment: DISC Essencial
+# Tabela: forms_resultados_02
 
 try:
     import reportlab
@@ -40,12 +39,12 @@ from config import DB_PATH  # Adicione esta importação
 
 # Dicionário de títulos para cada tabela
 TITULOS_TABELAS = {
-    "forms_resultados_01": "Análise: DISC Essencial"
+    "forms_resultados_02": "Análise: DISC 20 Perguntas"
 }
 
 # Dicionário de subtítulos para cada tabela
 SUBTITULOS_TABELAS = {
-    "forms_resultados_01": "Análise: DISC Essencial"
+    "forms_resultados_02": "Avaliação de DISC 20 Perguntas"
 }
 
 def format_br_number(value):
@@ -206,7 +205,7 @@ def new_user(cursor, user_id: int, tabela: str):
 
 def call_dados(cursor, element, tabela_destino: str):
     """
-    Busca dados na tabela forms_tab_01 e atualiza o value_element do registro atual.
+    Busca dados na tabela forms_tab_02 e atualiza o value_element do registro atual.
     
     Args:
         cursor: Cursor do banco de dados
@@ -221,13 +220,9 @@ def call_dados(cursor, element, tabela_destino: str):
         
         if type_elem == 'call_dados':
             # Busca o valor com CAST para garantir precisão decimal
-            # Usar a tabela de origem baseada na tabela de destino
-            tabela_origem = tabela_destino.replace("forms_resultados", "forms_tab")
-            
-            
-            cursor.execute(f"""
+            cursor.execute("""
                 SELECT CAST(value_element AS DECIMAL(20, 8))
-                FROM {tabela_origem} 
+                FROM forms_tab_02 
                 WHERE name_element = ? 
                 AND user_id = ?
                 ORDER BY ID_element DESC
@@ -249,7 +244,7 @@ def call_dados(cursor, element, tabela_destino: str):
                 
                 cursor.connection.commit()
             else:
-                st.warning(f"Valor não encontrado na tabela {tabela_origem} para {str_value} (user_id: {user_id})")
+                st.warning(f"Valor não encontrado na tabela forms_tab_02 para {str_value} (user_id: {user_id})")
                 
     except Exception as e:
         st.error(f"Erro ao processar call_dados: {str(e)}")
@@ -390,7 +385,7 @@ def grafico_barra(cursor, element):
 
 def tabela_dados(cursor, element):
     """
-    Cria uma tabela estilizada com dados da tabela forms_resultados_01.
+    Cria uma tabela estilizada com dados da tabela forms_resultados_02.
     Tabela transposta (vertical) com valores em vez de nomes.
     
     Args:
@@ -443,7 +438,7 @@ def tabela_dados(cursor, element):
         for type_name in type_names:
             cursor.execute("""
                 SELECT value_element 
-                FROM forms_resultados_01 
+                FROM forms_resultados_02 
                 WHERE name_element = ? 
                 AND user_id = ?
                 ORDER BY ID_element DESC
@@ -671,7 +666,7 @@ def subtitulo(titulo_pagina: str):
                         st.download_button(
                             label="Baixar PDF",
                             data=buffer.getvalue(),
-                            file_name="DISC_Essencial_Analise.pdf",
+                            file_name="DISC_20_Perguntas_Analise.pdf",
                             mime="application/pdf",
                         )
                     
@@ -784,11 +779,11 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                 if dados_tabela_perfil:
                     # Cria tabela com título "Resultados do Perfil"
                     elements.append(Paragraph("Resultados do Perfil", graphic_title_style))
-                elements.append(Spacer(1, 10))
-                t = Table(dados_tabela_perfil['data'], colWidths=[table_width * 0.6, table_width * 0.4])
-                t.setStyle(table_style)
-                elements.append(Table([[t]], colWidths=[table_width], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
-                elements.append(Spacer(1, 20))
+                    elements.append(Spacer(1, 10))
+                    t = Table(dados_tabela_perfil['data'], colWidths=[table_width * 0.6, table_width * 0.4])
+                    t.setStyle(table_style)
+                    elements.append(Table([[t]], colWidths=[table_width], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
+                    elements.append(Spacer(1, 20))
 
             # 2. GRÁFICO PERFIL (primeiro gráfico encontrado)
             if len(graficos) > 0:
@@ -798,13 +793,13 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                     # Usa o título do próprio gráfico ou padrão
                     titulo_grafico = dados_grafico_perfil['title'] or "RESULTADOS DE PERFIS"
                     elements.append(Paragraph(titulo_grafico, graphic_title_style))
-                elements.append(Spacer(1, 10))
-                elements.append(Table(
-                    [[dados_grafico_perfil['image']]],
-                    colWidths=[graph_width],
-                    style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]
-                ))
-                elements.append(Spacer(1, 30))
+                    elements.append(Spacer(1, 10))
+                    elements.append(Table(
+                        [[dados_grafico_perfil['image']]],
+                        colWidths=[graph_width],
+                        style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]
+                    ))
+                    elements.append(Spacer(1, 30))
 
             # 3. TABELA COMPORTAMENTO (segunda tabela ou cópia da primeira)
             if len(tabelas) > 1:
@@ -817,11 +812,11 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                 if dados_tabela_comportamento:
                     # Cria tabela com título "Resultados do Comportamento"
                     elements.append(Paragraph("Resultados do Comportamento", graphic_title_style))
-                elements.append(Spacer(1, 10))
-                t = Table(dados_tabela_comportamento['data'], colWidths=[table_width * 0.6, table_width * 0.4])
-                t.setStyle(table_style)
-                elements.append(Table([[t]], colWidths=[table_width], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
-                elements.append(Spacer(1, 20))
+                    elements.append(Spacer(1, 10))
+                    t = Table(dados_tabela_comportamento['data'], colWidths=[table_width * 0.6, table_width * 0.4])
+                    t.setStyle(table_style)
+                    elements.append(Table([[t]], colWidths=[table_width], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
+                    elements.append(Spacer(1, 20))
 
             # 4. GRÁFICO COMPORTAMENTO (segundo gráfico ou cópia do primeiro)
             if len(graficos) > 1:
@@ -990,7 +985,6 @@ def show_results(tabela_escolhida: str, titulo_pagina: str, user_id: int):
         """
         st.markdown(hide_streamlit_style, unsafe_allow_html=True)
         
-        
         # Buscar todos os elementos ordenados por row e col
         cursor.execute(f"""
             SELECT name_element, type_element, math_element, msg_element,
@@ -1005,7 +999,6 @@ def show_results(tabela_escolhida: str, titulo_pagina: str, user_id: int):
         """, (user_id,))
         
         elements = cursor.fetchall()
-        
         
         # Contador para gráficos
         grafico_count = 0
@@ -1221,7 +1214,7 @@ def analisar_perfil_disc_streamlit(cursor, user_id):
                 st.markdown(f"**Empresa:** {usuario_info[2] or 'Não informado'}")
             st.markdown("**Problema:** Dados DISC não encontrados para este usuário.")
             return
-        
+
         # 3. Processar elementos DISC
         name_elements = [name.strip() for name in result[0].split('|')]
         labels = [label.strip() for label in result[1].split('|')]
@@ -1390,21 +1383,21 @@ def analisar_perfil_disc_streamlit(cursor, user_id):
             # Exibir tabela usando Streamlit dataframe
             st.dataframe(
                 df_hibridas,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Posição": st.column_config.TextColumn(
-                    "Posição",
-                    width="small",
-                ),
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Posição": st.column_config.TextColumn(
+                        "Posição",
+                        width="small",
+                    ),
                     "Dimensão DISC": st.column_config.TextColumn(
                         "Dimensão DISC",
-                    width="medium",
-                ),
+                        width="medium",
+                    ),
                     "Valor Híbrido": st.column_config.TextColumn(
                         "Valor Híbrido",
-                    width="small",
-                ),
+                        width="small",
+                    ),
                     "Perfil": st.column_config.TextColumn(
                         "Perfil", 
                         width="small",
@@ -1432,17 +1425,17 @@ def analisar_perfil_disc_streamlit(cursor, user_id):
             diferenca = primario['valor_hibrido'] - secundario['valor_hibrido']
             
             # Determinar tipo de perfil e arquivo correspondente
-            if diferenca > 10:
+            if diferenca > 5:
                 # PERFIL ÚNICO
                 tipo_perfil = "ÚNICO"
                 letra_primaria = primario['letra']
                 
                 # Mapear arquivo baseado no perfil primário
                 arquivos_unicos = {
-                    'D': 'Conteudo/01/1_D_Dominancia.md',
-                    'I': 'Conteudo/01/1_I_Influencia.md', 
-                    'S': 'Conteudo/01/1_S_Estabilidade.md',
-                    'C': 'Conteudo/01/1_C_Conformidade.md'
+                    'D': 'Conteudo/02/1_D_Dominancia.md',
+                    'I': 'Conteudo/02/1_I_Influencia.md', 
+                    'S': 'Conteudo/02/1_S_Estabilidade.md',
+                    'C': 'Conteudo/02/1_C_Conformidade.md'
                 }
                 
                 arquivo_analise = arquivos_unicos.get(letra_primaria)
@@ -1457,60 +1450,54 @@ def analisar_perfil_disc_streamlit(cursor, user_id):
                 
                 # Mapear arquivo baseado na combinação
                 arquivos_combinados = {
-                    'DC': 'Conteudo/01/21_DC_DOMINANCIA_CONFORMIDADE.md',
-                    'DI': 'Conteudo/01/22_DI_DOMINANCIA_INFLUENCIA.md',
-                    'ID': 'Conteudo/01/23_ID_INFLUENCIA_DOMINANCIA.md',
-                    'IS': 'Conteudo/01/24_IS_INFLUENCIA_ESTABILIDADE.md',
-                    'SI': 'Conteudo/01/25_SI_ESTABILIDADE_INFLUENCIA.md',
-                    'SC': 'Conteudo/01/26_SC_ESTABILIDADE_CONFORMIDADE.md',
-                    'CD': 'Conteudo/01/27_CD_CONFORMIDADE_DOMINANCIA.md',
-                    'CS': 'Conteudo/01/28_CS_CONFORMIDADE_ESTABILIDADE.md'
+                    'DC': 'Conteudo/02/21_DC_DOMINANCIA_CONFORMIDADE.md',
+                    'DI': 'Conteudo/02/22_DI_DOMINANCIA_INFLUENCIA.md',
+                    'ID': 'Conteudo/02/23_ID_INFLUENCIA_DOMINANCIA.md',
+                    'IS': 'Conteudo/02/24_IS_INFLUENCIA_ESTABILIDADE.md',
+                    'SI': 'Conteudo/02/25_SI_ESTABILIDADE_INFLUENCIA.md',
+                    'SC': 'Conteudo/02/26_SC_ESTABILIDADE_CONFORMIDADE.md',
+                    'CD': 'Conteudo/02/27_CD_CONFORMIDADE_DOMINANCIA.md'
                 }
                 
                 arquivo_analise = arquivos_combinados.get(combinacao)
                 titulo_analise = f"Perfil {tipo_perfil}: {primario['dimensao']} + {secundario['dimensao']}"
-        else:
-            # Caso não haja dados suficientes para análise
-            tipo_perfil = "INDETERMINADO"
-            diferenca = 0.0
-            arquivo_analise = None
-            titulo_analise = "Dados insuficientes para análise"
-            st.error("❌ **Dados insuficientes:** Não há variáveis híbridas suficientes para análise comportamental.")
             
-        # Exibir informações do tipo de perfil
-        info_perfil_html = f"""
-        <div style='background-color: #fff3cd; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #ffc107;'>
-            <p style='margin: 0; font-size: 16px; color: #856404;'>
+            # Exibir informações do tipo de perfil
+            info_perfil_html = f"""
+            <div style='background-color: #fff3cd; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #ffc107;'>
+                <p style='margin: 0; font-size: 16px; color: #856404;'>
                     <strong>📊 Tipo de Perfil:</strong> {tipo_perfil}<br>
                     <strong>📈 Diferença Primário-Secundário:</strong> {diferenca:.1f} pontos<br>
-                    <strong>📋 Critério:</strong> {'Diferença > 10 pontos = Perfil Único' if diferenca > 10 else 'Diferença ≤ 10 pontos = Perfil Combinado'}
-            </p>
-        </div>
-        """
-        st.markdown(info_perfil_html, unsafe_allow_html=True)
-        
-        # Tentar ler e exibir o conteúdo do arquivo
-        if arquivo_analise:
-            try:
-                with open(arquivo_analise, 'r', encoding='utf-8') as f:
-                    conteudo_analise = f.read()
-                
-                # Exibir título da análise
-                st.markdown(f"## 📖 {titulo_analise}")
-                
-                # Exibir todo o conteúdo do arquivo markdown
-                st.markdown(conteudo_analise, unsafe_allow_html=True)
+                    <strong>📋 Critério:</strong> {'Diferença > 5 pontos = Perfil Único' if diferenca > 5 else 'Diferença ≤ 5 pontos = Perfil Combinado'}
+                </p>
+            </div>
+            """
+            st.markdown(info_perfil_html, unsafe_allow_html=True)
             
-            except FileNotFoundError:
-                st.error(f"❌ **Arquivo não encontrado:** {arquivo_analise}")
-                st.error("Verifique se o arquivo existe na pasta 'Conteudo' do projeto.")
-            
-            except Exception as e:
-                st.error(f"❌ **Erro ao ler arquivo:** {str(e)}")
+            # Tentar ler e exibir o conteúdo do arquivo
+            if arquivo_analise:
+                try:
+                    with open(arquivo_analise, 'r', encoding='utf-8') as f:
+                        conteudo_analise = f.read()
+                    
+                    # Exibir título da análise
+                    st.markdown(f"## 📖 {titulo_analise}")
+                    
+                    # Exibir todo o conteúdo do arquivo markdown
+                    st.markdown(conteudo_analise, unsafe_allow_html=True)
+                    
+                except FileNotFoundError:
+                    st.error(f"❌ **Arquivo não encontrado:** {arquivo_analise}")
+                    st.error("Verifique se o arquivo existe na pasta 'Conteudo' do projeto.")
+                    
+                except Exception as e:
+                    st.error(f"❌ **Erro ao ler arquivo:** {str(e)}")
+            else:
+                # Combinação não encontrada
+                st.error("❌ **COMBINAÇÃO DE PERFIL INDEFINIDO - AVISAR O CONSULTOR DO PROJETO**")
+                st.error(f"Combinação não mapeada: {letra_primaria}/{letra_secundaria}")
         else:
-            # Combinação não encontrada
-            st.error("❌ **COMBINAÇÃO DE PERFIL INDEFINIDO - AVISAR O CONSULTOR DO PROJETO**")
-            st.error(f"Combinação não mapeada: {letra_primaria}/{letra_secundaria}")
+            st.error("❌ **Dados insuficientes:** Necessário pelo menos 2 variáveis híbridas para análise.")
         
         # ===== FIM DO PASSO 3 =====
 
@@ -1532,7 +1519,6 @@ def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
     Args:
         cursor: Cursor do banco de dados.
         user_id (int): ID do usuário.
-        tabela_escolhida (str, optional): Nome da tabela. Se não fornecido, usa session_state.
 
     Returns:
         str: Uma string formatada em Markdown com a análise completa.
@@ -1551,7 +1537,7 @@ def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
         if tabela_escolhida:
             tabela = tabela_escolhida
         else:
-            tabela = st.session_state.get('tabela_escolhida', 'forms_resultados_01')
+            tabela = st.session_state.get('tabela_escolhida', 'forms_resultados_02')
         
         # Primeiro tenta buscar por diferentes títulos possíveis
         titulos_busca = [
@@ -1731,14 +1717,14 @@ def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
         secundario = variaveis_hibridas[1]
         diferenca = primario['valor_hibrido'] - secundario['valor_hibrido']
         
-        if diferenca > 10:
+        if diferenca > 5:
             # PERFIL ÚNICO
             letra_primaria = primario['letra']
             arquivos_unicos = {
-                'D': 'Conteudo/01/1_D_Dominancia.md',
-                'I': 'Conteudo/01/1_I_Influencia.md', 
-                'S': 'Conteudo/01/1_S_Estabilidade.md',
-                'C': 'Conteudo/01/1_C_Conformidade.md'
+                'D': 'Conteudo/02/1_D_Dominancia.md',
+                'I': 'Conteudo/02/1_I_Influencia.md', 
+                'S': 'Conteudo/02/1_S_Estabilidade.md',
+                'C': 'Conteudo/02/1_C_Conformidade.md'
             }
             arquivo_analise = arquivos_unicos.get(letra_primaria)
             titulo_analise = f"Perfil ÚNICO: {primario['dimensao']}"
@@ -1748,14 +1734,14 @@ def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
             letra_secundaria = secundario['letra']
             combinacao = f"{letra_primaria}{letra_secundaria}"
             arquivos_combinados = {
-                'DC': 'Conteudo/01/21_DC_DOMINANCIA_CONFORMIDADE.md',
-                'DI': 'Conteudo/01/22_DI_DOMINANCIA_INFLUENCIA.md',
-                'ID': 'Conteudo/01/23_ID_INFLUENCIA_DOMINANCIA.md',
-                'IS': 'Conteudo/01/24_IS_INFLUENCIA_ESTABILIDADE.md',
-                'SI': 'Conteudo/01/25_SI_ESTABILIDADE_INFLUENCIA.md',
-                'SC': 'Conteudo/01/26_SC_ESTABILIDADE_CONFORMIDADE.md',
-                'CD': 'Conteudo/01/27_CD_CONFORMIDADE_DOMINANCIA.md',
-                'CS': 'Conteudo/01/28_CS_CONFORMIDADE_ESTABILIDADE.md'
+                'DC': 'Conteudo/02/21_DC_DOMINANCIA_CONFORMIDADE.md',
+                'DI': 'Conteudo/02/22_DI_DOMINANCIA_INFLUENCIA.md',
+                'ID': 'Conteudo/02/23_ID_INFLUENCIA_DOMINANCIA.md',
+                'IS': 'Conteudo/02/24_IS_INFLUENCIA_ESTABILIDADE.md',
+                'SI': 'Conteudo/02/25_SI_ESTABILIDADE_INFLUENCIA.md',
+                'SC': 'Conteudo/02/26_SC_ESTABILIDADE_CONFORMIDADE.md',
+                'CD': 'Conteudo/02/27_CD_CONFORMIDADE_DOMINANCIA.md',
+                'CS': 'Conteudo/02/28_CS_CONFORMIDADE_ESTABILIDADE.md'
             }
             arquivo_analise = arquivos_combinados.get(combinacao)
             titulo_analise = f"Perfil COMBINADO: {primario['dimensao']} + {secundario['dimensao']}"
@@ -1789,7 +1775,7 @@ def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
         analise += conteudo_analise
         
         return analise
-        
+
     except Exception as e:
         traceback.print_exc()
         return f"Ocorreu um erro inesperado ao gerar a análise DISC: {str(e)}"

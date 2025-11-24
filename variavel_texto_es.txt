@@ -7,14 +7,14 @@
 # ================================================================
 
 # === CONFIGURACIÓN GENERAL ===
-app_title=Plataforma C.H.A.V.E. Comportamental - v2.1
+app_title=Plataforma C.H.A.V.E. Comportamental - v2.2
 app_about=Sistema de Assessments - 09/11/2025
 
 # === MAIN.PY - PANTALLA DE LOGIN ===
-main_001=Plataforma C.H.A.V.E. Comportamental v2.1
+main_001=Plataforma C.H.A.V.E. Comportamental v2.2
 main_002=Correo electrónico
 main_003=Contraseña
-main_004=Declaro que he leído y acepto los [términos de uso de la herramienta](https://ag93eventos.com.br/ear/Termos_Uso_DISC.pdf)
+main_004=Declaro que he leído y acepto los [términos de uso de la herramienta](https://ag93eventos.com.br/ear/Termos_Termo_de_Uso - Multi-Assessments.pdf)
 main_005=Entrar
 main_006=Debe aceptar los términos de uso para continuar.
 main_007=Correo electrónico o contraseña inválidos. Por favor, verifique sus datos e intente nuevamente.

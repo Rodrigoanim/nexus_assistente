@@ -1,8 +1,7 @@
-# resultados_01.py
-# Data: 21/11/2025
+# resultados_04.py
+# Data: 15/11/2025 
 # Pagina de resultados e Analises - Dashboard.
-# Tabela: forms_resultados_01
-# Assessment: DISC Essencial
+# Tabela: forms_resultados_04
 
 try:
     import reportlab
@@ -33,6 +32,7 @@ import tempfile
 import matplotlib.pyplot as plt
 import traceback
 import re
+import os
 from paginas.monitor import registrar_acesso
 import time
 
@@ -40,12 +40,12 @@ from config import DB_PATH  # Adicione esta importação
 
 # Dicionário de títulos para cada tabela
 TITULOS_TABELAS = {
-    "forms_resultados_01": "Análise: DISC Essencial"
+    "forms_resultados_04": "Análise: Armadilhas do Empresário"
 }
 
 # Dicionário de subtítulos para cada tabela
 SUBTITULOS_TABELAS = {
-    "forms_resultados_01": "Análise: DISC Essencial"
+    "forms_resultados_04": "Análise:Armadilhas do Empresário"
 }
 
 def format_br_number(value):
@@ -206,7 +206,7 @@ def new_user(cursor, user_id: int, tabela: str):
 
 def call_dados(cursor, element, tabela_destino: str):
     """
-    Busca dados na tabela forms_tab_01 e atualiza o value_element do registro atual.
+    Busca dados na tabela forms_tab_04 e atualiza o value_element do registro atual.
     
     Args:
         cursor: Cursor do banco de dados
@@ -221,13 +221,9 @@ def call_dados(cursor, element, tabela_destino: str):
         
         if type_elem == 'call_dados':
             # Busca o valor com CAST para garantir precisão decimal
-            # Usar a tabela de origem baseada na tabela de destino
-            tabela_origem = tabela_destino.replace("forms_resultados", "forms_tab")
-            
-            
-            cursor.execute(f"""
+            cursor.execute("""
                 SELECT CAST(value_element AS DECIMAL(20, 8))
-                FROM {tabela_origem} 
+                FROM forms_tab_04 
                 WHERE name_element = ? 
                 AND user_id = ?
                 ORDER BY ID_element DESC
@@ -249,7 +245,7 @@ def call_dados(cursor, element, tabela_destino: str):
                 
                 cursor.connection.commit()
             else:
-                st.warning(f"Valor não encontrado na tabela {tabela_origem} para {str_value} (user_id: {user_id})")
+                st.warning(f"Valor não encontrado na tabela forms_tab_04 para {str_value} (user_id: {user_id})")
                 
     except Exception as e:
         st.error(f"Erro ao processar call_dados: {str(e)}")
@@ -390,7 +386,7 @@ def grafico_barra(cursor, element):
 
 def tabela_dados(cursor, element):
     """
-    Cria uma tabela estilizada com dados da tabela forms_resultados_01.
+    Cria uma tabela estilizada com dados da tabela forms_resultados_04.
     Tabela transposta (vertical) com valores em vez de nomes.
     
     Args:
@@ -443,7 +439,7 @@ def tabela_dados(cursor, element):
         for type_name in type_names:
             cursor.execute("""
                 SELECT value_element 
-                FROM forms_resultados_01 
+                FROM forms_resultados_04_04 
                 WHERE name_element = ? 
                 AND user_id = ?
                 ORDER BY ID_element DESC
@@ -671,7 +667,7 @@ def subtitulo(titulo_pagina: str):
                         st.download_button(
                             label="Baixar PDF",
                             data=buffer.getvalue(),
-                            file_name="DISC_Essencial_Analise.pdf",
+                            file_name="Armadilhas_Empresario_Analise.pdf",
                             mime="application/pdf",
                         )
                     
@@ -784,11 +780,11 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                 if dados_tabela_perfil:
                     # Cria tabela com título "Resultados do Perfil"
                     elements.append(Paragraph("Resultados do Perfil", graphic_title_style))
-                elements.append(Spacer(1, 10))
-                t = Table(dados_tabela_perfil['data'], colWidths=[table_width * 0.6, table_width * 0.4])
-                t.setStyle(table_style)
-                elements.append(Table([[t]], colWidths=[table_width], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
-                elements.append(Spacer(1, 20))
+                    elements.append(Spacer(1, 10))
+                    t = Table(dados_tabela_perfil['data'], colWidths=[table_width * 0.6, table_width * 0.4])
+                    t.setStyle(table_style)
+                    elements.append(Table([[t]], colWidths=[table_width], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
+                    elements.append(Spacer(1, 20))
 
             # 2. GRÁFICO PERFIL (primeiro gráfico encontrado)
             if len(graficos) > 0:
@@ -798,13 +794,13 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                     # Usa o título do próprio gráfico ou padrão
                     titulo_grafico = dados_grafico_perfil['title'] or "RESULTADOS DE PERFIS"
                     elements.append(Paragraph(titulo_grafico, graphic_title_style))
-                elements.append(Spacer(1, 10))
-                elements.append(Table(
-                    [[dados_grafico_perfil['image']]],
-                    colWidths=[graph_width],
-                    style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]
-                ))
-                elements.append(Spacer(1, 30))
+                    elements.append(Spacer(1, 10))
+                    elements.append(Table(
+                        [[dados_grafico_perfil['image']]],
+                        colWidths=[graph_width],
+                        style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]
+                    ))
+                    elements.append(Spacer(1, 30))
 
             # 3. TABELA COMPORTAMENTO (segunda tabela ou cópia da primeira)
             if len(tabelas) > 1:
@@ -817,11 +813,11 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                 if dados_tabela_comportamento:
                     # Cria tabela com título "Resultados do Comportamento"
                     elements.append(Paragraph("Resultados do Comportamento", graphic_title_style))
-                elements.append(Spacer(1, 10))
-                t = Table(dados_tabela_comportamento['data'], colWidths=[table_width * 0.6, table_width * 0.4])
-                t.setStyle(table_style)
-                elements.append(Table([[t]], colWidths=[table_width], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
-                elements.append(Spacer(1, 20))
+                    elements.append(Spacer(1, 10))
+                    t = Table(dados_tabela_comportamento['data'], colWidths=[table_width * 0.6, table_width * 0.4])
+                    t.setStyle(table_style)
+                    elements.append(Table([[t]], colWidths=[table_width], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
+                    elements.append(Spacer(1, 20))
 
             # 4. GRÁFICO COMPORTAMENTO (segundo gráfico ou cópia do primeiro)
             if len(graficos) > 1:
@@ -844,7 +840,7 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
 
             # 5. ANÁLISE DETALHADA DO ASSESSMENT
             try:
-                analise_texto = analisar_perfil_disc(pdf_cursor, user_id, tabela_escolhida)
+                analise_texto = analisar_vulnerabilidade_7armadilhas(pdf_cursor, user_id, tabela_escolhida)
                 # Verificar se a análise retornou conteúdo válido (não apenas mensagem de erro)
                 if analise_texto and not analise_texto.startswith("Análise não disponível"):
                     # Adicionar título da seção
@@ -990,7 +986,6 @@ def show_results(tabela_escolhida: str, titulo_pagina: str, user_id: int):
         """
         st.markdown(hide_streamlit_style, unsafe_allow_html=True)
         
-        
         # Buscar todos os elementos ordenados por row e col
         cursor.execute(f"""
             SELECT name_element, type_element, math_element, msg_element,
@@ -1005,7 +1000,6 @@ def show_results(tabela_escolhida: str, titulo_pagina: str, user_id: int):
         """, (user_id,))
         
         elements = cursor.fetchall()
-        
         
         # Contador para gráficos
         grafico_count = 0
@@ -1065,12 +1059,12 @@ def show_results(tabela_escolhida: str, titulo_pagina: str, user_id: int):
                                 elif element[1] == 'call_dados':
                                     call_dados(cursor, element, tabela_escolhida)
         
-        # 5. Gerar e exibir a análise DISC
+        # 5. Gerar e exibir a análise 7 Armadilhas
         with st.expander("Análise Detalhada do Assessment", expanded=True):
             st.markdown("---")
             
             # Chama a função que gera e exibe a análise diretamente
-            analisar_perfil_disc_streamlit(cursor, user_id)
+            analisar_vulnerabilidade_7armadilhas_streamlit(cursor, user_id)
             
             st.markdown("---")
 
@@ -1157,10 +1151,10 @@ def tabela_dados_sem_titulo(cursor, element):
     except Exception as e:
         st.error(f"Erro ao criar tabela: {str(e)}")
 
-def analisar_perfil_disc_streamlit(cursor, user_id):
+def analisar_vulnerabilidade_7armadilhas_streamlit(cursor, user_id):
     """
-    Gera análise comportamental DISC na interface Streamlit.
-    FUNÇÃO LIMPA - Pronta para novas regras e conteúdo.
+    Gera análise de vulnerabilidade das 7 Armadilhas do Eu Empresário na interface Streamlit.
+    FUNÇÃO ATUALIZADA - Implementa lógica das 7 Armadilhas.
     """
     try:
         # 1. Buscar dados do usuário
@@ -1171,106 +1165,60 @@ def analisar_perfil_disc_streamlit(cursor, user_id):
         """, (user_id,))
         usuario_info = cursor.fetchone()
         
-        # 2. Buscar gráfico DISC
-        tabela = st.session_state.tabela_escolhida
+        # 2. Buscar pontuação das perguntas diretas (M3000)
+        cursor.execute("""
+            SELECT value_element
+            FROM forms_resultados_04
+            WHERE user_id = ? AND str_element = 'M3000'
+            LIMIT 1
+        """, (user_id,))
+        result_diretas = cursor.fetchone()
+        pontuacao_diretas = float(result_diretas[0]) if result_diretas and result_diretas[0] is not None else 0.0
         
-        # Busca por títulos DISC
-        titulos_busca = [
-            '%RESULTADOS DE PERFIS%',
-            '%PESQUISA COMPORTAMENTAL%', 
-            '%COMPORTAMENTAL%',
-            '%PERFIL%',
-            '%DISC%'
-        ]
+        # 3. Buscar pontuação das perguntas invertidas (N3000)
+        cursor.execute("""
+            SELECT value_element
+            FROM forms_resultados_04
+            WHERE user_id = ? AND str_element = 'N3000'
+            LIMIT 1
+        """, (user_id,))
+        result_invertidas = cursor.fetchone()
+        pontuacao_invertidas = float(result_invertidas[0]) if result_invertidas and result_invertidas[0] is not None else 0.0
         
-        result = None
-        titulo_grafico_usado = ""
-        for titulo in titulos_busca:
-            cursor.execute(f"""
-                SELECT select_element, str_element, msg_element
-                FROM {tabela}
-                WHERE user_id = ? AND type_element = 'grafico' AND msg_element LIKE ?
-                LIMIT 1
-            """, (user_id, titulo))
-            result = cursor.fetchone()
-            if result and result[0] and result[1]:
-                titulo_grafico_usado = titulo
-                break
+        # 4. Calcular vulnerabilidade total
+        vulnerabilidade_total = pontuacao_diretas + pontuacao_invertidas
         
-        # Fallback: busca qualquer gráfico com 4 elementos
-        if not result or not result[0] or not result[1]:
-            cursor.execute(f"""
-                SELECT select_element, str_element, msg_element
-                FROM {tabela}
-                WHERE user_id = ? AND type_element = 'grafico'
-                AND select_element IS NOT NULL 
-                AND str_element IS NOT NULL
-                AND LENGTH(select_element) - LENGTH(REPLACE(select_element, '|', '')) = 3
-                LIMIT 1
-            """, (user_id,))
-            result = cursor.fetchone()
-            titulo_grafico_usado = "Gráfico com 4 elementos encontrado"
+        # 5. Determinar faixa de risco e arquivo correspondente
+        if vulnerabilidade_total <= 7:
+            faixa_risco = "Baixo Risco"
+            arquivo_markdown = "1_BaixoRisco.md"
+            cor_faixa = "#2E8B57"  # Verde
+        elif vulnerabilidade_total <= 14:
+            faixa_risco = "Atenção"
+            arquivo_markdown = "2_Atencao.md"
+            cor_faixa = "#DAA520"  # Amarelo
+        elif vulnerabilidade_total <= 21:
+            faixa_risco = "Alto Risco"
+            arquivo_markdown = "3_AltoRisco.md"
+            cor_faixa = "#FF8C00"  # Laranja
+        else:
+            faixa_risco = "Risco Crítico"
+            arquivo_markdown = "4_RiscoCritico.md"
+            cor_faixa = "#B22222"  # Vermelho
         
-        # Validação: se não encontrou dados DISC
-        if not result or not result[0] or not result[1]:
-            st.markdown("## ⚠️ Análise DISC não disponível")
+        # 6. Validação: se não encontrou dados
+        if not result_diretas and not result_invertidas:
+            st.markdown("## ⚠️ Análise de Vulnerabilidade não disponível")
             st.markdown("### 👤 Informações do Usuário:")
             if usuario_info:
                 st.markdown(f"**Nome:** {usuario_info[0] or 'Não informado'}")
                 st.markdown(f"**Email:** {usuario_info[1] or 'Não informado'}")
                 st.markdown(f"**Empresa:** {usuario_info[2] or 'Não informado'}")
-            st.markdown("**Problema:** Dados DISC não encontrados para este usuário.")
-            return
-        
-        # 3. Processar elementos DISC
-        name_elements = [name.strip() for name in result[0].split('|')]
-        labels = [label.strip() for label in result[1].split('|')]
-        titulo_grafico = result[2] if result[2] else "Gráfico DISC"
-        
-        # 4. Mapear perfis D,I,S,C
-        profile_map = {}
-        for name, label in zip(name_elements, labels):
-            if '(' in label and ')' in label:
-                letra_parenteses = label[label.find('(')+1:label.find(')')].upper()
-                if letra_parenteses in ['D', 'I', 'S', 'C']:
-                    profile_map[name] = letra_parenteses
-            else:
-                first_letter = label[0].upper() if label else ''
-                if first_letter in ['D', 'I', 'S', 'C']:
-                    profile_map[name] = first_letter
-
-        # 5. Obter valores DISC do usuário
-        placeholders = ','.join('?' for _ in name_elements)
-        cursor.execute(f"""
-            SELECT name_element, value_element
-            FROM {tabela}
-            WHERE user_id = ? AND name_element IN ({placeholders})
-        """, (user_id, *name_elements))
-        resultados_disc_raw = cursor.fetchall()
-        
-        if not resultados_disc_raw:
-            st.markdown("## ⚠️ Dados DISC não encontrados")
-            st.markdown("**Problema:** Valores DISC não calculados para este usuário.")
+            st.markdown("**Problema:** Dados de vulnerabilidade não encontrados para este usuário.")
             return
 
-        # 6. Construir perfil DISC
-        perfil = {profile_map.get(name, name): float(value if value is not None else 0.0) 
-                 for name, value in resultados_disc_raw}
-        perfil = {k: v for k, v in perfil.items() if k}  # Remove chaves vazias
-
-        if len(perfil) < 2:
-            st.markdown("## ⚠️ Dados DISC insuficientes")
-            st.markdown(f"**Problema:** Apenas {len(perfil)} perfis encontrados. Necessário pelo menos 2.")
-            return
-
-        # 7. Definir perfis primário e secundário
-        perfil_ordenado = sorted(perfil.items(), key=lambda item: item[1], reverse=True)
-        perfil_primario, valor_primario = perfil_ordenado[0]
-        perfil_secundario, valor_secundario = perfil_ordenado[1] if len(perfil_ordenado) > 1 else ('', 0)
-
-        # ===== PASSO 2: CÁLCULO DE VARIÁVEIS HÍBRIDAS =====
-        
-        st.markdown("## 📊 Análise Comportamental DISC")
+        # 7. Exibir análise de vulnerabilidade
+        st.markdown("## 📊 Análise de Vulnerabilidade - 7 Armadilhas do Eu Empresário")
         st.markdown("### 👤 Informações do Participante")
         
         # Exibir dados do usuário
@@ -1286,259 +1234,93 @@ def analisar_perfil_disc_streamlit(cursor, user_id):
             """
             st.markdown(info_html, unsafe_allow_html=True)
         
-        # Buscar valores para cálculo das variáveis híbridas
-        elementos_busca = ['C31', 'D31', 'C32', 'D32', 'C33', 'D33', 'C34', 'D34']
-        valores_elementos = {}
+        # 8. Exibir pontuações e vulnerabilidade total
+        st.markdown("### 📈 Pontuações de Vulnerabilidade")
         
-        for elemento in elementos_busca:
-            cursor.execute(f"""
-                SELECT value_element
-                FROM {tabela}
-                WHERE user_id = ? AND name_element = ?
-                LIMIT 1
-            """, (user_id, elemento))
-            result = cursor.fetchone()
-            if result and result[0] is not None:
-                # Converter formato brasileiro para float
-                valor_convertido = parse_br_number(result[0])
-                
-                # Aplicar correção se valor estiver multiplicado por 1000
-                if valor_convertido >= 1000:
-                    valores_elementos[elemento] = valor_convertido / 1000
-                else:
-                    valores_elementos[elemento] = valor_convertido
-            else:
-                valores_elementos[elemento] = 0.0
+        # Criar colunas para exibir as pontuações
+        col1, col2, col3 = st.columns(3)
         
-        # Calcular variáveis híbridas
-        variaveis_hibridas = []
-        
-        # Dominância Híbrida = (C31 + D31) / 2
-        dominancia_hibrida = (valores_elementos['C31'] + valores_elementos['D31']) / 2
-        variaveis_hibridas.append({
-            'dimensao': 'Dominância',
-            'letra': 'D',
-            'valor_hibrido': dominancia_hibrida,
-            'perfil': valores_elementos['C31'],
-            'comportamento': valores_elementos['D31']
-        })
-        
-        # Influência Híbrida = (C32 + D32) / 2
-        influencia_hibrida = (valores_elementos['C32'] + valores_elementos['D32']) / 2
-        variaveis_hibridas.append({
-            'dimensao': 'Influência',
-            'letra': 'I',
-            'valor_hibrido': influencia_hibrida,
-            'perfil': valores_elementos['C32'],
-            'comportamento': valores_elementos['D32']
-        })
-        
-        # Estabilidade Híbrida = (C33 + D33) / 2
-        estabilidade_hibrida = (valores_elementos['C33'] + valores_elementos['D33']) / 2
-        variaveis_hibridas.append({
-            'dimensao': 'Estabilidade',
-            'letra': 'S',
-            'valor_hibrido': estabilidade_hibrida,
-            'perfil': valores_elementos['C33'],
-            'comportamento': valores_elementos['D33']
-        })
-        
-        # Conformidade Híbrida = (C34 + D34) / 2
-        conformidade_hibrida = (valores_elementos['C34'] + valores_elementos['D34']) / 2
-        variaveis_hibridas.append({
-            'dimensao': 'Conformidade',
-            'letra': 'C',
-            'valor_hibrido': conformidade_hibrida,
-            'perfil': valores_elementos['C34'],
-            'comportamento': valores_elementos['D34']
-        })
-        
-        # Ordenar por valor híbrido (maior para menor)
-        variaveis_hibridas.sort(key=lambda x: x['valor_hibrido'], reverse=True)
-        
-        # Renderizar tabela de variáveis híbridas
-        st.markdown("### 🔄 Variáveis Híbridas DISC")
-        st.markdown("*Média balanceada entre Perfil e Comportamento*")
-        
-        # Preparar dados para DataFrame
-        import pandas as pd
-        
-        dados_tabela = []
-        for i, variavel in enumerate(variaveis_hibridas):
-            posicao = f"{i+1}º"
-            
-            # Formatação brasileira com 1 casa decimal (valores já corrigidos na origem)
-            valor_hibrido_br = f"{variavel['valor_hibrido']:.1f}".replace('.', ',')
-            perfil_br = f"{variavel['perfil']:.1f}".replace('.', ',')
-            comportamento_br = f"{variavel['comportamento']:.1f}".replace('.', ',')
-            
-            dados_tabela.append({
-                'Posição': posicao,
-                'Dimensão DISC': f"{variavel['letra']} - {variavel['dimensao']}",
-                'Valor Híbrido': valor_hibrido_br,
-                'Perfil': perfil_br,
-                'Comportamento': comportamento_br
-            })
-        
-        # Criar DataFrame
-        df_hibridas = pd.DataFrame(dados_tabela)
-        
-        # Criar colunas para centralizar
-        col1, col2, col3 = st.columns([1, 8, 1])
-        
-        with col2:
-            # Exibir tabela usando Streamlit dataframe
-            st.dataframe(
-                df_hibridas,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Posição": st.column_config.TextColumn(
-                    "Posição",
-                    width="small",
-                ),
-                    "Dimensão DISC": st.column_config.TextColumn(
-                        "Dimensão DISC",
-                    width="medium",
-                ),
-                    "Valor Híbrido": st.column_config.TextColumn(
-                        "Valor Híbrido",
-                    width="small",
-                ),
-                    "Perfil": st.column_config.TextColumn(
-                        "Perfil", 
-                        width="small",
-                    ),
-                    "Comportamento": st.column_config.TextColumn(
-                        "Comportamento",
-                        width="small",
-                    ),
-                }
+        with col1:
+            st.metric(
+                label="Perguntas Diretas",
+                value=f"{pontuacao_diretas:.1f}",
+                help="Soma das 7 perguntas diretas (M3000)"
             )
         
-
+        with col2:
+            st.metric(
+                label="Perguntas Invertidas", 
+                value=f"{pontuacao_invertidas:.1f}",
+                help="Soma das 7 perguntas invertidas (N3000)"
+            )
         
-        # ===== FIM DO PASSO 2 =====
-
-        # ===== PASSO 3: ANÁLISE DE PERFIL ÚNICO OU COMBINADO =====
+        with col3:
+            st.metric(
+                label="Vulnerabilidade Total",
+                value=f"{vulnerabilidade_total:.1f}",
+                help="Soma total (0-28 pontos)"
+            )
         
-        st.markdown("---")
-        st.markdown("### 🔍 Análise Comportamental Detalhada")
+        # 9. Exibir faixa de risco
+        st.markdown("### 🎯 Classificação de Risco")
         
-        # Calcular diferença entre primário e secundário
-        if len(variaveis_hibridas) >= 2:
-            primario = variaveis_hibridas[0]
-            secundario = variaveis_hibridas[1]
-            diferenca = primario['valor_hibrido'] - secundario['valor_hibrido']
+        risco_html = f"""
+        <div style='background-color: {cor_faixa}; color: white; padding: 20px; margin: 15px 0; border-radius: 8px; text-align: center;'>
+            <h2 style='margin: 0; font-size: 24px;'>{faixa_risco}</h2>
+            <p style='margin: 5px 0 0 0; font-size: 16px;'>Pontuação: {vulnerabilidade_total:.1f} de 28 pontos</p>
+        </div>
+        """
+        st.markdown(risco_html, unsafe_allow_html=True)
+        
+        # 10. Ler e exibir conteúdo do arquivo markdown correspondente
+        st.markdown("### 📋 Relatório de Vulnerabilidade")
+        
+        try:
+            # Caminho para o arquivo markdown
+            import os
+            current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            arquivo_path = os.path.join(current_dir, "Conteudo", "04", arquivo_markdown)
             
-            # Determinar tipo de perfil e arquivo correspondente
-            if diferenca > 10:
-                # PERFIL ÚNICO
-                tipo_perfil = "ÚNICO"
-                letra_primaria = primario['letra']
+            if os.path.exists(arquivo_path):
+                with open(arquivo_path, 'r', encoding='utf-8') as file:
+                    conteudo_markdown = file.read()
                 
-                # Mapear arquivo baseado no perfil primário
-                arquivos_unicos = {
-                    'D': 'Conteudo/01/1_D_Dominancia.md',
-                    'I': 'Conteudo/01/1_I_Influencia.md', 
-                    'S': 'Conteudo/01/1_S_Estabilidade.md',
-                    'C': 'Conteudo/01/1_C_Conformidade.md'
-                }
-                
-                arquivo_analise = arquivos_unicos.get(letra_primaria)
-                titulo_analise = f"Perfil {tipo_perfil}: {primario['dimensao']}"
-                
+                # Exibir o conteúdo do arquivo
+                st.markdown(conteudo_markdown)
             else:
-                # PERFIL COMBINADO
-                tipo_perfil = "COMBINADO"
-                letra_primaria = primario['letra']
-                letra_secundaria = secundario['letra']
-                combinacao = f"{letra_primaria}{letra_secundaria}"
+                st.warning(f"Arquivo de relatório não encontrado: {arquivo_markdown}")
+                st.info("Por favor, verifique se o arquivo existe na pasta Conteudo/")
                 
-                # Mapear arquivo baseado na combinação
-                arquivos_combinados = {
-                    'DC': 'Conteudo/01/21_DC_DOMINANCIA_CONFORMIDADE.md',
-                    'DI': 'Conteudo/01/22_DI_DOMINANCIA_INFLUENCIA.md',
-                    'ID': 'Conteudo/01/23_ID_INFLUENCIA_DOMINANCIA.md',
-                    'IS': 'Conteudo/01/24_IS_INFLUENCIA_ESTABILIDADE.md',
-                    'SI': 'Conteudo/01/25_SI_ESTABILIDADE_INFLUENCIA.md',
-                    'SC': 'Conteudo/01/26_SC_ESTABILIDADE_CONFORMIDADE.md',
-                    'CD': 'Conteudo/01/27_CD_CONFORMIDADE_DOMINANCIA.md',
-                    'CS': 'Conteudo/01/28_CS_CONFORMIDADE_ESTABILIDADE.md'
-                }
-                
-                arquivo_analise = arquivos_combinados.get(combinacao)
-                titulo_analise = f"Perfil {tipo_perfil}: {primario['dimensao']} + {secundario['dimensao']}"
-        else:
-            # Caso não haja dados suficientes para análise
-            tipo_perfil = "INDETERMINADO"
-            diferenca = 0.0
-            arquivo_analise = None
-            titulo_analise = "Dados insuficientes para análise"
-            st.error("❌ **Dados insuficientes:** Não há variáveis híbridas suficientes para análise comportamental.")
-            
-        # Exibir informações do tipo de perfil
-        info_perfil_html = f"""
-        <div style='background-color: #fff3cd; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #ffc107;'>
-            <p style='margin: 0; font-size: 16px; color: #856404;'>
-                    <strong>📊 Tipo de Perfil:</strong> {tipo_perfil}<br>
-                    <strong>📈 Diferença Primário-Secundário:</strong> {diferenca:.1f} pontos<br>
-                    <strong>📋 Critério:</strong> {'Diferença > 10 pontos = Perfil Único' if diferenca > 10 else 'Diferença ≤ 10 pontos = Perfil Combinado'}
+        except Exception as e:
+            st.error(f"Erro ao ler arquivo de relatório: {str(e)}")
+        
+        # 11. Informações adicionais sobre o assessment
+        st.markdown("### ℹ️ Sobre o Assessment")
+        
+        info_assessment = f"""
+        <div style='background-color: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #6c757d;'>
+            <p style='margin: 0; font-size: 14px; color: #6c757d;'>
+                <strong>Assessment:</strong> 7 Armadilhas do Eu Empresário<br>
+                <strong>Desenvolvido por:</strong> Erika Rossi - EAR Consultoria<br>
+                <strong>Total de Perguntas:</strong> 14 (7 diretas + 7 invertidas)<br>
+                <strong>Escala de Pontuação:</strong> 0 a 28 pontos<br>
+                <strong>Data da Análise:</strong> {date.today().strftime('%d/%m/%Y')}
             </p>
         </div>
         """
-        st.markdown(info_perfil_html, unsafe_allow_html=True)
-        
-        # Tentar ler e exibir o conteúdo do arquivo
-        if arquivo_analise:
-            try:
-                with open(arquivo_analise, 'r', encoding='utf-8') as f:
-                    conteudo_analise = f.read()
-                
-                # Exibir título da análise
-                st.markdown(f"## 📖 {titulo_analise}")
-                
-                # Exibir todo o conteúdo do arquivo markdown
-                st.markdown(conteudo_analise, unsafe_allow_html=True)
-            
-            except FileNotFoundError:
-                st.error(f"❌ **Arquivo não encontrado:** {arquivo_analise}")
-                st.error("Verifique se o arquivo existe na pasta 'Conteudo' do projeto.")
-            
-            except Exception as e:
-                st.error(f"❌ **Erro ao ler arquivo:** {str(e)}")
-        else:
-            # Combinação não encontrada
-            st.error("❌ **COMBINAÇÃO DE PERFIL INDEFINIDO - AVISAR O CONSULTOR DO PROJETO**")
-            st.error(f"Combinação não mapeada: {letra_primaria}/{letra_secundaria}")
-        
-        # ===== FIM DO PASSO 3 =====
+        st.markdown(info_assessment, unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"Erro na análise DISC: {str(e)}")
+        st.error(f"Erro na análise de vulnerabilidade: {str(e)}")
+        import traceback
+        st.error(f"Detalhes do erro: {traceback.format_exc()}")
 
-def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
+def analisar_vulnerabilidade_7armadilhas(cursor, user_id, tabela_escolhida=None):
     """
-    Realiza uma análise completa do perfil DISC do usuário dividida em 2 blocos:
-    1. Análise do Perfil - características, pontos fortes e limitações
-    2. Análise do Comportamento - manifestações práticas e desenvolvimento
-
-    A base de conhecimento deve ser estruturada com as seguintes tags:
-    - <Perfis_Individuais>...</Perfis_Individuais>
-    - <Perfis_Combinados>...</Perfis_Combinados>
-    - <Excesso_Pontos_Fortes>...</Excesso_Pontos_Fortes>
-    - <Caminhos_Aperfeiçoamento>...</Caminhos_Aperfeiçoamento>
-
-    Args:
-        cursor: Cursor do banco de dados.
-        user_id (int): ID do usuário.
-        tabela_escolhida (str, optional): Nome da tabela. Se não fornecido, usa session_state.
-
-    Returns:
-        str: Uma string formatada em Markdown com a análise completa.
+    Retorna análise de vulnerabilidade das 7 Armadilhas do Eu Empresário em formato texto.
     """
     try:
-        # 1. Buscar dados do usuário primeiro
+        # 1. Buscar dados do usuário
         cursor.execute("""
             SELECT u.nome, u.email, u.empresa 
             FROM usuarios u 
@@ -1546,229 +1328,57 @@ def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
         """, (user_id,))
         usuario_info = cursor.fetchone()
         
-        # 2. Encontrar o gráfico de resultados DISC - busca mais ampla
-        # Usa tabela_escolhida como parâmetro se fornecido, senão usa session_state
+        # 2. Buscar pontuação das perguntas diretas (M3000)
         if tabela_escolhida:
             tabela = tabela_escolhida
         else:
-            tabela = st.session_state.get('tabela_escolhida', 'forms_resultados_01')
+            tabela = st.session_state.get('tabela_escolhida', 'forms_resultados_04')
         
-        # Primeiro tenta buscar por diferentes títulos possíveis
-        titulos_busca = [
-            '%RESULTADOS DE PERFIS%',
-            '%PESQUISA COMPORTAMENTAL%', 
-            '%COMPORTAMENTAL%',
-            '%PERFIL%',
-            '%DISC%'
-        ]
-        
-        result = None
-        titulo_grafico_usado = ""
-        for titulo in titulos_busca:
-            cursor.execute(f"""
-                SELECT select_element, str_element, msg_element
-                FROM {tabela}
-                WHERE user_id = ? AND type_element = 'grafico' AND msg_element LIKE ?
-                LIMIT 1
-            """, (user_id, titulo))
-            result = cursor.fetchone()
-            if result and result[0] and result[1]:
-                titulo_grafico_usado = titulo
-                break
-        
-        # Se não encontrou por título, busca qualquer gráfico com 4 elementos (D,I,S,C)
-        if not result or not result[0] or not result[1]:
-            cursor.execute(f"""
-                SELECT select_element, str_element, msg_element
-                FROM {tabela}
-                WHERE user_id = ? AND type_element = 'grafico'
-                AND select_element IS NOT NULL 
-                AND str_element IS NOT NULL
-                AND LENGTH(select_element) - LENGTH(REPLACE(select_element, '|', '')) = 3
-                LIMIT 1
-            """, (user_id,))
-            result = cursor.fetchone()
-            titulo_grafico_usado = "Gráfico com 4 elementos encontrado"
-        
-        if not result or not result[0] or not result[1]:
-            # Se ainda não encontrou, busca todos os elementos disponíveis para debug
-            cursor.execute(f"""
-                SELECT name_element, value_element, msg_element
-                FROM {tabela}
-                WHERE user_id = ? AND value_element IS NOT NULL
-                ORDER BY name_element
-                LIMIT 10
-            """, (user_id,))
-            elementos_debug = cursor.fetchall()
-            
-            debug_info = "<br>".join([f"- {elem[0]}: {elem[1]} ({elem[2] or 'sem título'})" for elem in elementos_debug])
-            
-            return f"""
-            ## ⚠️ Análise DISC não disponível
-            
-            ### 👤 Informações do Usuário:
-            **Nome:** {usuario_info[0] if usuario_info and usuario_info[0] else 'Não informado'}<br>
-            **Email:** {usuario_info[1] if usuario_info and usuario_info[1] else 'Não informado'}<br>
-            **Empresa:** {usuario_info[2] if usuario_info and usuario_info[2] else 'Não informado'}
-            
-            ### 📊 Problema encontrado:
-            Não foi possível localizar o gráfico DISC na tabela `{tabela}` para o usuário {user_id}.
-            
-            ### 🔍 Elementos encontrados na tabela:
-            {debug_info if debug_info else "Nenhum elemento encontrado"}
-            
-            **Solução:** Verifique se os dados DISC foram calculados corretamente ou se a configuração do gráfico está presente na tabela `{tabela}`.
-            """
-
-        name_elements = [name.strip() for name in result[0].split('|')]
-        labels = [label.strip() for label in result[1].split('|')]
-        titulo_grafico = result[2] if result[2] else "Gráfico DISC"
-        
-        # Cria mapeamento baseado nos rótulos DISC
-        profile_map = {}
-        for name, label in zip(name_elements, labels):
-            # Procura pela letra DISC nos parênteses primeiro
-            if '(' in label and ')' in label:
-                letra_parenteses = label[label.find('(')+1:label.find(')')].upper()
-                if letra_parenteses in ['D', 'I', 'S', 'C']:
-                    profile_map[name] = letra_parenteses
-            else:
-                # Fallback: primeira letra do label
-                first_letter = label[0].upper() if label else ''
-                if first_letter in ['D', 'I', 'S', 'C']:
-                    profile_map[name] = first_letter
-
-        # 3. Obter os valores DISC do usuário
-        placeholders = ','.join('?' for _ in name_elements)
         cursor.execute(f"""
-            SELECT name_element, value_element
+            SELECT value_element
             FROM {tabela}
-            WHERE user_id = ? AND name_element IN ({placeholders})
-        """, (user_id, *name_elements))
-        resultados_disc_raw = cursor.fetchall()
+            WHERE user_id = ? AND str_element = 'M3000'
+            LIMIT 1
+        """, (user_id,))
+        result_diretas = cursor.fetchone()
+        pontuacao_diretas = float(result_diretas[0]) if result_diretas and result_diretas[0] is not None else 0.0
         
-        if not resultados_disc_raw:
-            return f"""
-            ## ⚠️ Dados DISC não encontrados
-            
-            ### 👤 Informações do Usuário:
-            **Nome:** {usuario_info[0] if usuario_info and usuario_info[0] else 'Não informado'}<br>
-            **Email:** {usuario_info[1] if usuario_info and usuario_info[1] else 'Não informado'}<br>
-            **Empresa:** {usuario_info[2] if usuario_info and usuario_info[2] else 'Não informado'}
-            
-            ### 📊 Problema:
-            Encontrado gráfico "{titulo_grafico}" mas não há valores calculados para os elementos: {', '.join(name_elements)}
-            
-            **Solução:** Complete a avaliação DISC para gerar os resultados.
-            """
-
-        perfil = {profile_map.get(name, name): float(value if value is not None else 0.0) for name, value in resultados_disc_raw}
-        perfil = {k: v for k, v in perfil.items() if k}  # Remove chaves vazias
-
-        if len(perfil) < 2:
-            return f"""
-            ## ⚠️ Dados DISC insuficientes
-            
-            ### 👤 Informações do Usuário:
-            **Nome:** {usuario_info[0] if usuario_info and usuario_info[0] else 'Não informado'}<br>
-            **Email:** {usuario_info[1] if usuario_info and usuario_info[1] else 'Não informado'}<br>
-            **Empresa:** {usuario_info[2] if usuario_info and usuario_info[2] else 'Não informado'}
-            
-            ### 📊 Dados encontrados:
-            {', '.join([f'{k}: {v}' for k, v in perfil.items()])}
-            
-            **Problema:** Apenas {len(perfil)} perfis encontrados. Necessário pelo menos 2 para análise.
-            """
-
-        # 4. Calcular variáveis híbridas (mesma lógica da função streamlit)
-        import os
-        elementos_busca = ['C31', 'D31', 'C32', 'D32', 'C33', 'D33', 'C34', 'D34']
-        valores_elementos = {}
+        # 3. Buscar pontuação das perguntas invertidas (N3000)
+        cursor.execute(f"""
+            SELECT value_element
+            FROM {tabela}
+            WHERE user_id = ? AND str_element = 'N3000'
+            LIMIT 1
+        """, (user_id,))
+        result_invertidas = cursor.fetchone()
+        pontuacao_invertidas = float(result_invertidas[0]) if result_invertidas and result_invertidas[0] is not None else 0.0
         
-        for elemento in elementos_busca:
-            cursor.execute(f"""
-                SELECT value_element
-                FROM {tabela}
-                WHERE user_id = ? AND name_element = ?
-                LIMIT 1
-            """, (user_id, elemento))
-            result = cursor.fetchone()
-            if result and result[0] is not None:
-                # Converter formato brasileiro para float
-                try:
-                    valor_str = str(result[0]).replace(',', '.')
-                    valor_convertido = float(valor_str)
-                    # Aplicar correção se valor estiver multiplicado por 1000
-                    if valor_convertido >= 1000:
-                        valores_elementos[elemento] = valor_convertido / 1000
-                    else:
-                        valores_elementos[elemento] = valor_convertido
-                except:
-                    valores_elementos[elemento] = 0.0
-            else:
-                valores_elementos[elemento] = 0.0
+        # 4. Calcular vulnerabilidade total
+        vulnerabilidade_total = pontuacao_diretas + pontuacao_invertidas
         
-        # Calcular variáveis híbridas
-        variaveis_hibridas = []
-        dominancia_hibrida = (valores_elementos.get('C31', 0) + valores_elementos.get('D31', 0)) / 2
-        influencia_hibrida = (valores_elementos.get('C32', 0) + valores_elementos.get('D32', 0)) / 2
-        estabilidade_hibrida = (valores_elementos.get('C33', 0) + valores_elementos.get('D33', 0)) / 2
-        conformidade_hibrida = (valores_elementos.get('C34', 0) + valores_elementos.get('D34', 0)) / 2
-        
-        variaveis_hibridas = [
-            {'dimensao': 'Dominância', 'letra': 'D', 'valor_hibrido': dominancia_hibrida},
-            {'dimensao': 'Influência', 'letra': 'I', 'valor_hibrido': influencia_hibrida},
-            {'dimensao': 'Estabilidade', 'letra': 'S', 'valor_hibrido': estabilidade_hibrida},
-            {'dimensao': 'Conformidade', 'letra': 'C', 'valor_hibrido': conformidade_hibrida}
-        ]
-        variaveis_hibridas.sort(key=lambda x: x['valor_hibrido'], reverse=True)
-        
-        if len(variaveis_hibridas) < 2:
-            return "Análise não disponível: dados insuficientes para análise."
-        
-        # Determinar tipo de perfil e arquivo correspondente
-        primario = variaveis_hibridas[0]
-        secundario = variaveis_hibridas[1]
-        diferenca = primario['valor_hibrido'] - secundario['valor_hibrido']
-        
-        if diferenca > 10:
-            # PERFIL ÚNICO
-            letra_primaria = primario['letra']
-            arquivos_unicos = {
-                'D': 'Conteudo/01/1_D_Dominancia.md',
-                'I': 'Conteudo/01/1_I_Influencia.md', 
-                'S': 'Conteudo/01/1_S_Estabilidade.md',
-                'C': 'Conteudo/01/1_C_Conformidade.md'
-            }
-            arquivo_analise = arquivos_unicos.get(letra_primaria)
-            titulo_analise = f"Perfil ÚNICO: {primario['dimensao']}"
+        # 5. Determinar faixa de risco e arquivo correspondente
+        if vulnerabilidade_total <= 7:
+            faixa_risco = "Baixo Risco"
+            arquivo_markdown = "Conteudo/04/1_BaixoRisco.md"
+        elif vulnerabilidade_total <= 14:
+            faixa_risco = "Atenção"
+            arquivo_markdown = "Conteudo/04/2_Atencao.md"
+        elif vulnerabilidade_total <= 21:
+            faixa_risco = "Alto Risco"
+            arquivo_markdown = "Conteudo/04/3_AltoRisco.md"
         else:
-            # PERFIL COMBINADO
-            letra_primaria = primario['letra']
-            letra_secundaria = secundario['letra']
-            combinacao = f"{letra_primaria}{letra_secundaria}"
-            arquivos_combinados = {
-                'DC': 'Conteudo/01/21_DC_DOMINANCIA_CONFORMIDADE.md',
-                'DI': 'Conteudo/01/22_DI_DOMINANCIA_INFLUENCIA.md',
-                'ID': 'Conteudo/01/23_ID_INFLUENCIA_DOMINANCIA.md',
-                'IS': 'Conteudo/01/24_IS_INFLUENCIA_ESTABILIDADE.md',
-                'SI': 'Conteudo/01/25_SI_ESTABILIDADE_INFLUENCIA.md',
-                'SC': 'Conteudo/01/26_SC_ESTABILIDADE_CONFORMIDADE.md',
-                'CD': 'Conteudo/01/27_CD_CONFORMIDADE_DOMINANCIA.md',
-                'CS': 'Conteudo/01/28_CS_CONFORMIDADE_ESTABILIDADE.md'
-            }
-            arquivo_analise = arquivos_combinados.get(combinacao)
-            titulo_analise = f"Perfil COMBINADO: {primario['dimensao']} + {secundario['dimensao']}"
+            faixa_risco = "Risco Crítico"
+            arquivo_markdown = "Conteudo/04/4_RiscoCritico.md"
         
-        # Ler arquivo de análise
-        if not arquivo_analise:
-            return "Análise não disponível: perfil não mapeado."
+        # 6. Validação: se não encontrou dados
+        if not result_diretas and not result_invertidas:
+            return "Análise não disponível: dados de vulnerabilidade não encontrados."
         
-        # Tentar diferentes caminhos possíveis para o arquivo
+        # 7. Ler arquivo de análise
         caminhos_possiveis = [
-            arquivo_analise,
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), arquivo_analise),
-            os.path.join(os.path.dirname(__file__), arquivo_analise),
+            arquivo_markdown,
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), arquivo_markdown),
+            os.path.join(os.path.dirname(__file__), arquivo_markdown),
         ]
         
         conteudo_analise = None
@@ -1782,17 +1392,20 @@ def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
                 continue
         
         if not conteudo_analise:
-            return f"Análise não disponível: arquivo {arquivo_analise} não encontrado."
-
+            return f"Análise não disponível: arquivo {arquivo_markdown} não encontrado."
+        
         # Retornar análise formatada com título e conteúdo
-        analise = f"## {titulo_analise}\n\n"
+        analise = f"## Análise de Vulnerabilidade - {faixa_risco}\n\n"
+        analise += f"**Pontuação Total:** {vulnerabilidade_total:.1f} pontos\n\n"
         analise += conteudo_analise
         
         return analise
         
     except Exception as e:
         traceback.print_exc()
-        return f"Ocorreu um erro inesperado ao gerar a análise DISC: {str(e)}"
+        return f"Ocorreu um erro inesperado ao gerar a análise: {str(e)}"
+
+# Função antiga removida - substituída por analisar_vulnerabilidade_7armadilhas_streamlit
 
 if __name__ == "__main__":
     show_results()
