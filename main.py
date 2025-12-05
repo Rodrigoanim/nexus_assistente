@@ -1,4 +1,4 @@
-# Data: 23/11/2025
+# Data: 05/12/2025
 # IDE Cursor - Auto Agent
 # uv run streamlit run main.py
 # Plataforma com varios assessments
@@ -38,14 +38,14 @@ import importlib
 
 # Configuração da página - deve ser a primeira chamada do Streamlit
 st.set_page_config(
-    page_title="C.H.A.V.E. Comportamental - v2.2",  # Título na Aba do Navegador
+    page_title="CHAVE Comportamental - v2.2",  # Título na Aba do Navegador
     page_icon="🔑",
     layout="centered",
     menu_items={
         'About': """
-        ### Plataforma de Assessments Comportamentais e de Valores
+        ### Plataforma C.H.A.V.E. Comportamental - v2.2
         
-        Versão 2.1 - 09/11/2025
+        Versão 2.2 - 05/12/2025
         
         © 2025 Todos os direitos reservados.
         """,

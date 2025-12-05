@@ -1,6 +1,6 @@
-# Arquivo: create_forms_01.py
+# Arquivo: create_forms_03.py
 # Data: 05/12/2025
-# Importação: forms_tab_01 (DISC Essencial - 10 Perguntas)
+# Importação: forms_tab_03 (Âncoras de Carreira)
 # Programa para importar dados do arquivo TXT para formato multi-assessment
 
 import sqlite3
@@ -85,9 +85,9 @@ def validate_selectbox_data(row_dict):
         print(f"⚠️  Erro na validação de selectbox: {str(e)}")
         return False, row_dict
 
-def import_forms_tab_01():
+def import_forms_tab_03():
     """
-    Importa dados do arquivo forms_tab.txt para a tabela forms_tab_01
+    Importa dados do arquivo forms_tab.txt para a tabela forms_tab_03
     """
     if not check_database():
         return False
@@ -99,7 +99,7 @@ def import_forms_tab_01():
         return False
     
     # 2. Confirmar seleção
-    if not confirm_file_selection(txt_file, "forms_tab_01"):
+    if not confirm_file_selection(txt_file, "forms_tab_03"):
         print("❌ Importação cancelada pelo usuário.")
         return False
     
@@ -108,32 +108,32 @@ def import_forms_tab_01():
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        print("🔄 Iniciando importação: forms_tab.txt → forms_tab_01")
+        print("🔄 Iniciando importação: forms_tab.txt → forms_tab_03")
         
-        # 3. Verificar se forms_tab_01 já existe
+        # 3. Verificar se forms_tab_03 já existe
         cursor.execute("""
             SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='forms_tab_01'
+            WHERE type='table' AND name='forms_tab_03'
         """)
         
         if cursor.fetchone():
-            print("⚠️  Tabela forms_tab_01 já existe!")
+            print("⚠️  Tabela forms_tab_03 já existe!")
             root = tk.Tk()
             root.withdraw()
             if not messagebox.askyesno("Confirmação", 
-                "A tabela forms_tab_01 já existe. Deseja apagá-la e recriar?"):
+                "A tabela forms_tab_03 já existe. Deseja apagá-la e recriar?"):
                 print("Operação cancelada pelo usuário.")
                 return False
             
             # Apagar tabela existente
-            cursor.execute("DROP TABLE IF EXISTS forms_tab_01")
+            cursor.execute("DROP TABLE IF EXISTS forms_tab_03")
             conn.commit()
-            print("🗑️  Tabela forms_tab_01 removida para recriação.")
+            print("🗑️  Tabela forms_tab_03 removida para recriação.")
         
-        # 4. Criar tabela forms_tab_01
-        print("📋 Criando tabela forms_tab_01...")
+        # 4. Criar tabela forms_tab_03
+        print("📋 Criando tabela forms_tab_03...")
         cursor.execute("""
-            CREATE TABLE forms_tab_01 (
+            CREATE TABLE forms_tab_03 (
                 ID_element INTEGER PRIMARY KEY AUTOINCREMENT,
                 name_element TEXT NOT NULL,
                 type_element TEXT NOT NULL,
@@ -201,7 +201,7 @@ def import_forms_tab_01():
                 
                 # Inserir registro
                 cursor.execute("""
-                    INSERT INTO forms_tab_01 (
+                    INSERT INTO forms_tab_03 (
                         name_element, type_element, math_element, msg_element,
                         value_element, select_element, str_element, e_col, e_row,
                         user_id, section, col_len
@@ -244,11 +244,11 @@ def import_forms_tab_01():
                 COUNT(*) as total_registros,
                 COUNT(DISTINCT user_id) as usuarios_unicos,
                 COUNT(DISTINCT section) as secoes_unicas
-            FROM forms_tab_01
+            FROM forms_tab_03
         """)
         
         stats = cursor.fetchone()
-        print(f"\n📈 Estatísticas da tabela forms_tab_01:")
+        print(f"\n📈 Estatísticas da tabela forms_tab_03:")
         print(f"   Total de registros: {stats[0]}")
         print(f"   Usuários únicos: {stats[1]}")
         print(f"   Seções únicas: {stats[2]}")
@@ -264,9 +264,9 @@ def import_forms_tab_01():
         if conn:
             conn.close()
 
-def import_forms_resultados_01():
+def import_forms_resultados_03():
     """
-    Importa dados do arquivo forms_resultados.txt para a tabela forms_resultados_01
+    Importa dados do arquivo forms_resultados.txt para a tabela forms_resultados_03
     """
     if not check_database():
         return False
@@ -278,7 +278,7 @@ def import_forms_resultados_01():
         return False
     
     # 2. Confirmar seleção
-    if not confirm_file_selection(txt_file, "forms_resultados_01"):
+    if not confirm_file_selection(txt_file, "forms_resultados_03"):
         print("❌ Importação cancelada pelo usuário.")
         return False
     
@@ -287,32 +287,32 @@ def import_forms_resultados_01():
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        print("🔄 Iniciando importação: forms_resultados.txt → forms_resultados_01")
+        print("🔄 Iniciando importação: forms_resultados.txt → forms_resultados_03")
         
-        # 3. Verificar se forms_resultados_01 já existe
+        # 3. Verificar se forms_resultados_03 já existe
         cursor.execute("""
             SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='forms_resultados_01'
+            WHERE type='table' AND name='forms_resultados_03'
         """)
         
         if cursor.fetchone():
-            print("⚠️  Tabela forms_resultados_01 já existe!")
+            print("⚠️  Tabela forms_resultados_03 já existe!")
             root = tk.Tk()
             root.withdraw()
             if not messagebox.askyesno("Confirmação", 
-                "A tabela forms_resultados_01 já existe. Deseja apagá-la e recriar?"):
+                "A tabela forms_resultados_03 já existe. Deseja apagá-la e recriar?"):
                 print("Operação cancelada pelo usuário.")
                 return False
             
             # Apagar tabela existente
-            cursor.execute("DROP TABLE IF EXISTS forms_resultados_01")
+            cursor.execute("DROP TABLE IF EXISTS forms_resultados_03")
             conn.commit()
-            print("🗑️  Tabela forms_resultados_01 removida para recriação.")
+            print("🗑️  Tabela forms_resultados_03 removida para recriação.")
         
-        # 4. Criar tabela forms_resultados_01
-        print("📋 Criando tabela forms_resultados_01...")
+        # 4. Criar tabela forms_resultados_03
+        print("📋 Criando tabela forms_resultados_03...")
         cursor.execute("""
-            CREATE TABLE forms_resultados_01 (
+            CREATE TABLE forms_resultados_03 (
                 ID_element INTEGER PRIMARY KEY AUTOINCREMENT,
                 name_element TEXT NOT NULL,
                 type_element TEXT NOT NULL,
@@ -356,11 +356,11 @@ def import_forms_resultados_01():
             print("❌ Importação cancelada pelo usuário.")
             return False
         
-        # 7. Criar mapeamento de seções baseado na forms_tab_01
+        # 7. Criar mapeamento de seções baseado na forms_tab_03
         print("🔗 Criando mapeamento de seções...")
         cursor.execute("""
             SELECT name_element, section 
-            FROM forms_tab_01 
+            FROM forms_tab_03 
             WHERE user_id = 0
         """)
         section_mapping = dict(cursor.fetchall())
@@ -388,7 +388,7 @@ def import_forms_resultados_01():
                 
                 # Inserir registro
                 cursor.execute("""
-                    INSERT INTO forms_resultados_01 (
+                    INSERT INTO forms_resultados_03 (
                         name_element, type_element, math_element, msg_element,
                         value_element, select_element, str_element, e_col, e_row,
                         section, user_id
@@ -429,11 +429,11 @@ def import_forms_resultados_01():
             SELECT 
                 COUNT(*) as total_registros,
                 COUNT(DISTINCT user_id) as usuarios_unicos
-            FROM forms_resultados_01
+            FROM forms_resultados_03
         """)
         
         stats = cursor.fetchone()
-        print(f"\n📈 Estatísticas da tabela forms_resultados_01:")
+        print(f"\n📈 Estatísticas da tabela forms_resultados_03:")
         print(f"   Total de registros: {stats[0]}")
         print(f"   Usuários únicos: {stats[1]}")
         
@@ -460,32 +460,32 @@ def verify_import():
         
         print("\n🔍 Verificando importações...")
         
-        # Verificar forms_tab_01
+        # Verificar forms_tab_03
         cursor.execute("""
             SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='forms_tab_01'
+            WHERE type='table' AND name='forms_tab_03'
         """)
         
         forms_tab_exists = cursor.fetchone() is not None
         
-        # Verificar forms_resultados_01
+        # Verificar forms_resultados_03
         cursor.execute("""
             SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='forms_resultados_01'
+            WHERE type='table' AND name='forms_resultados_03'
         """)
         
         forms_resultados_exists = cursor.fetchone() is not None
         
-        print(f"📊 forms_tab_01: {'✅ Existe' if forms_tab_exists else '❌ Não encontrada'}")
-        print(f"📊 forms_resultados_01: {'✅ Existe' if forms_resultados_exists else '❌ Não encontrada'}")
+        print(f"📊 forms_tab_03: {'✅ Existe' if forms_tab_exists else '❌ Não encontrada'}")
+        print(f"📊 forms_resultados_03: {'✅ Existe' if forms_resultados_exists else '❌ Não encontrada'}")
         
         if forms_tab_exists:
-            cursor.execute("SELECT COUNT(*) FROM forms_tab_01")
+            cursor.execute("SELECT COUNT(*) FROM forms_tab_03")
             count_tab = cursor.fetchone()[0]
             print(f"   Registros: {count_tab}")
         
         if forms_resultados_exists:
-            cursor.execute("SELECT COUNT(*) FROM forms_resultados_01")
+            cursor.execute("SELECT COUNT(*) FROM forms_resultados_03")
             count_resultados = cursor.fetchone()[0]
             print(f"   Registros: {count_resultados}")
         
@@ -503,16 +503,93 @@ def verify_import():
         if conn:
             conn.close()
 
+def show_table_statistics():
+    """Mostra estatísticas das tabelas."""
+    if not check_database():
+        return
+    
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        print("\n📈 ESTATÍSTICAS DAS TABELAS ÂNCORAS DE CARREIRA:")
+        print("-" * 60)
+        
+        # Verificar forms_tab_03
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='forms_tab_03'
+        """)
+        
+        if cursor.fetchone():
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total_registros,
+                    COUNT(DISTINCT user_id) as usuarios_unicos,
+                    COUNT(DISTINCT section) as secoes_unicas
+                FROM forms_tab_03
+            """)
+            
+            stats = cursor.fetchone()
+            print(f"\n📊 forms_tab_03:")
+            print(f"   Total de registros: {stats[0]}")
+            print(f"   Usuários únicos: {stats[1]}")
+            print(f"   Seções únicas: {stats[2]}")
+            
+            # Mostrar seções encontradas
+            cursor.execute("""
+                SELECT DISTINCT section, COUNT(*) as count
+                FROM forms_tab_03 
+                WHERE section IS NOT NULL AND section != ''
+                GROUP BY section
+                ORDER BY section
+            """)
+            sections = cursor.fetchall()
+            if sections:
+                print(f"   Seções encontradas:")
+                for section, count in sections:
+                    print(f"     - {section}: {count} registros")
+        else:
+            print("\n📊 forms_tab_03: ❌ Não encontrada")
+        
+        # Verificar forms_resultados_03
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='forms_resultados_03'
+        """)
+        
+        if cursor.fetchone():
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total_registros,
+                    COUNT(DISTINCT user_id) as usuarios_unicos
+                FROM forms_resultados_03
+            """)
+            
+            stats = cursor.fetchone()
+            print(f"\n📊 forms_resultados_03:")
+            print(f"   Total de registros: {stats[0]}")
+            print(f"   Usuários únicos: {stats[1]}")
+        else:
+            print("\n📊 forms_resultados_03: ❌ Não encontrada")
+            
+    except Exception as e:
+        print(f"❌ Erro ao obter estatísticas: {str(e)}")
+    finally:
+        if conn:
+            conn.close()
+
 def main():
     """Função principal do programa."""
     print("=" * 60)
-    print("📥 IMPORTAÇÃO: DISC 10 (forms_tab + forms_resultados)")
+    print("📥 IMPORTAÇÃO: ÂNCORAS DE CARREIRA (forms_tab + forms_resultados)")
     print("=" * 60)
     
     while True:
         print("\n📋 MENU DE OPÇÕES:")
-        print("1 - Importar forms_tab.txt → forms_tab_01")
-        print("2 - Importar forms_resultados.txt → forms_resultados_01")
+        print("1 - Importar forms_tab.txt → forms_tab_03")
+        print("2 - Importar forms_resultados.txt → forms_resultados_03")
         print("3 - Verificar importações")
         print("4 - Mostrar estatísticas das tabelas")
         print("0 - Sair")
@@ -522,14 +599,14 @@ def main():
             
             if opcao == "1":
                 print("\n📥 Iniciando importação forms_tab...")
-                if import_forms_tab_01():
+                if import_forms_tab_03():
                     print("✅ Importação forms_tab concluída com sucesso!")
                 else:
                     print("❌ Importação forms_tab falhou!")
                     
             elif opcao == "2":
                 print("\n📥 Iniciando importação forms_resultados...")
-                if import_forms_resultados_01():
+                if import_forms_resultados_03():
                     print("✅ Importação forms_resultados concluída com sucesso!")
                 else:
                     print("❌ Importação forms_resultados falhou!")
@@ -557,68 +634,6 @@ def main():
         except Exception as e:
             print(f"❌ Erro inesperado: {str(e)}")
 
-def show_table_statistics():
-    """Mostra estatísticas das tabelas."""
-    if not check_database():
-        return
-    
-    conn = None
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        print("\n📈 ESTATÍSTICAS DAS TABELAS DISC 10:")
-        print("-" * 50)
-        
-        # Verificar forms_tab_01
-        cursor.execute("""
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='forms_tab_01'
-        """)
-        
-        if cursor.fetchone():
-            cursor.execute("""
-                SELECT 
-                    COUNT(*) as total_registros,
-                    COUNT(DISTINCT user_id) as usuarios_unicos,
-                    COUNT(DISTINCT section) as secoes_unicas
-                FROM forms_tab_01
-            """)
-            
-            stats = cursor.fetchone()
-            print(f"\n📊 forms_tab_01:")
-            print(f"   Total de registros: {stats[0]}")
-            print(f"   Usuários únicos: {stats[1]}")
-            print(f"   Seções únicas: {stats[2]}")
-        else:
-            print("\n📊 forms_tab_01: ❌ Não encontrada")
-        
-        # Verificar forms_resultados_01
-        cursor.execute("""
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='forms_resultados_01'
-        """)
-        
-        if cursor.fetchone():
-            cursor.execute("""
-                SELECT 
-                    COUNT(*) as total_registros,
-                    COUNT(DISTINCT user_id) as usuarios_unicos
-                FROM forms_resultados_01
-            """)
-            
-            stats = cursor.fetchone()
-            print(f"\n📊 forms_resultados_01:")
-            print(f"   Total de registros: {stats[0]}")
-            print(f"   Usuários únicos: {stats[1]}")
-        else:
-            print("\n📊 forms_resultados_01: ❌ Não encontrada")
-            
-    except Exception as e:
-        print(f"❌ Erro ao obter estatísticas: {str(e)}")
-    finally:
-        if conn:
-            conn.close()
-
 if __name__ == "__main__":
     main()
+

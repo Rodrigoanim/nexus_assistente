@@ -299,11 +299,11 @@ def grafico_barra(cursor, element):
         type_names = select.split('|')
         labels = rotulos.split('|')
         
-        # Lista para armazenar os valores
-        valores = []
+        # Lista para armazenar os valores e labels juntos para ordenação
+        dados_grafico = []
         
         # Busca os valores para cada type_name no banco
-        for type_name in type_names:
+        for i, type_name in enumerate(type_names):
             tabela = st.session_state.tabela_escolhida
             cursor.execute(f"""
                 SELECT value_element 
@@ -316,7 +316,19 @@ def grafico_barra(cursor, element):
             
             result = cursor.fetchone()
             valor = result[0] if result and result[0] is not None else 0.0
-            valores.append(valor)
+            dados_grafico.append({
+                'label': labels[i],
+                'valor': valor,
+                'type_name': type_name.strip()
+            })
+        
+        # Ordenar por valor (decrescente - maior para menor)
+        dados_grafico.sort(key=lambda x: x['valor'], reverse=True)
+        
+        # Separar novamente após ordenação
+        labels = [d['label'] for d in dados_grafico]
+        valores = [d['valor'] for d in dados_grafico]
+        type_names_ordenados = [d['type_name'] for d in dados_grafico]
         
         # Sistema exclusivo para Âncoras de Carreira - Cores do prisma/espectro
         cores_ancoras = {
@@ -330,11 +342,11 @@ def grafico_barra(cursor, element):
             'D34': '#FF1493'   # Rosa - Desafio
         }
         
-        # Mapear códigos das âncoras para cores
+        # Mapear códigos das âncoras para cores (usando type_names_ordenados após ordenação)
         cores = []
         cores_prisma = ['#FF0000', '#FF8C00', '#FFD700', '#00FF00', '#0080FF', '#4B0082', '#8A2BE2', '#FF1493']
         
-        for i, type_name in enumerate(type_names):
+        for i, type_name in enumerate(type_names_ordenados):
             codigo = type_name.strip()
             if codigo in cores_ancoras:
                 cores.append(cores_ancoras[codigo])
@@ -470,6 +482,15 @@ def tabela_dados(cursor, element):
             'Valor': valores
         })
         
+        # Converter valores para numérico para ordenação correta
+        df['Valor_Numerico'] = df['Valor'].apply(lambda x: parse_br_number(x))
+        
+        # Ordenar por valor (decrescente - maior para menor)
+        df = df.sort_values('Valor_Numerico', ascending=False)
+        
+        # Remover coluna auxiliar
+        df = df.drop('Valor_Numerico', axis=1)
+        
         # Criar três colunas, usando a do meio para a tabela
         col1, col2, col3 = st.columns([1, 8, 1])
         
@@ -525,10 +546,12 @@ def gerar_dados_tabela(cursor, elemento, height_pct=100, width_pct=100):
         # Separa os type_names e rótulos
         type_names = str(select).split('|')
         labels = str(rotulos).split('|')
-        valores = []
+        
+        # Lista para armazenar os dados juntos para ordenação
+        dados_tabela = []
         
         # Busca os valores para cada type_name
-        for type_name in type_names:
+        for i, type_name in enumerate(type_names):
             cursor.execute(f"""
                 SELECT name_element, value_element 
                 FROM {st.session_state.tabela_escolhida}
@@ -540,12 +563,24 @@ def gerar_dados_tabela(cursor, elemento, height_pct=100, width_pct=100):
             
             result = cursor.fetchone()
             valor = format_br_number(result[1]) if result and result[1] is not None else '0,00'
-            valores.append(valor)
+            valor_numerico = parse_br_number(valor)
+            dados_tabela.append({
+                'label': labels[i],
+                'valor': valor,
+                'valor_numerico': valor_numerico
+            })
+        
+        # Ordenar por valor numérico (decrescente - maior para menor)
+        dados_tabela.sort(key=lambda x: x['valor_numerico'], reverse=True)
+        
+        # Separar novamente após ordenação
+        labels_ordenados = [d['label'] for d in dados_tabela]
+        valores_ordenados = [d['valor'] for d in dados_tabela]
         
         # Retornar dados formatados para a tabela
         return {
             'title': msg if msg else "Tabela de Dados",
-            'data': [['Indicador', 'Valor']] + list(zip(labels, valores)),
+            'data': [['Indicador', 'Valor']] + list(zip(labels_ordenados, valores_ordenados)),
             'height_pct': height_pct,
             'width_pct': width_pct
         }
@@ -565,9 +600,12 @@ def gerar_dados_grafico(cursor, elemento, tabela_escolhida: str, height_pct=100,
             return None
         type_names = str(select).split('|')
         labels = str(rotulos).split('|')
-        valores = []
+        
+        # Lista para armazenar os valores e labels juntos para ordenação
+        dados_grafico = []
+        
         # Busca os valores para cada type_name
-        for type_name in type_names:
+        for i, type_name in enumerate(type_names):
             cursor.execute(f"""
                 SELECT value_element 
                 FROM {tabela_escolhida}
@@ -578,7 +616,19 @@ def gerar_dados_grafico(cursor, elemento, tabela_escolhida: str, height_pct=100,
             """, (type_name.strip(), user_id))
             result = cursor.fetchone()
             valor = float(result[0]) if result and result[0] is not None else 0.0
-            valores.append(valor)
+            dados_grafico.append({
+                'label': labels[i],
+                'valor': valor,
+                'type_name': type_name.strip()
+            })
+        
+        # Ordenar por valor (decrescente - maior para menor)
+        dados_grafico.sort(key=lambda x: x['valor'], reverse=True)
+        
+        # Separar novamente após ordenação
+        labels = [d['label'] for d in dados_grafico]
+        valores = [d['valor'] for d in dados_grafico]
+        type_names_ordenados = [d['type_name'] for d in dados_grafico]
         
         # Sistema exclusivo para Âncoras de Carreira - Cores do prisma/espectro
         cores_ancoras = {
@@ -592,11 +642,11 @@ def gerar_dados_grafico(cursor, elemento, tabela_escolhida: str, height_pct=100,
             'D34': '#FF1493'   # Rosa - Desafio
         }
         
-        # Mapear códigos das âncoras para cores
+        # Mapear códigos das âncoras para cores (usando type_names_ordenados após ordenação)
         cores = []
         cores_prisma = ['#FF0000', '#FF8C00', '#FFD700', '#00FF00', '#0080FF', '#4B0082', '#8A2BE2', '#FF1493']
         
-        for i, type_name in enumerate(type_names):
+        for i, type_name in enumerate(type_names_ordenados):
             codigo = type_name.strip()
             if codigo in cores_ancoras:
                 cores.append(cores_ancoras[codigo])
@@ -1581,6 +1631,15 @@ def tabela_dados_sem_titulo(cursor, element):
             'Indicador': rotulos,
             'Valor': valores
         })
+        
+        # Converter valores para numérico para ordenação correta
+        df['Valor_Numerico'] = df['Valor'].apply(lambda x: parse_br_number(x))
+        
+        # Ordenar por valor (decrescente - maior para menor)
+        df = df.sort_values('Valor_Numerico', ascending=False)
+        
+        # Remover coluna auxiliar
+        df = df.drop('Valor_Numerico', axis=1)
         
         # Criar três colunas, usando a do meio para a tabela
         col1, col2, col3 = st.columns([1, 8, 1])

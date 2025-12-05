@@ -7,9 +7,47 @@ import streamlit as st
 import pandas as pd
 import re
 import time
+import sys
+import os
+from pathlib import Path
 # import logging
 
-from config import DB_PATH
+# Adiciona o diretório raiz ao path para importações
+# Isso garante que o módulo config seja encontrado quando executado diretamente
+_this_file = Path(__file__).resolve()
+_root_dir = _this_file.parent.parent
+_root_dir_str = str(_root_dir)
+
+# Sempre adiciona o diretório raiz ao path
+if _root_dir_str not in sys.path:
+    sys.path.insert(0, _root_dir_str)
+
+# Tenta importar config
+try:
+    from config import DB_PATH
+except ImportError:
+    # Se falhar, tenta mudar o diretório de trabalho e importar novamente
+    _old_cwd = os.getcwd()
+    try:
+        os.chdir(_root_dir_str)
+        from config import DB_PATH
+    except ImportError:
+        # Última tentativa: adiciona explicitamente ao path
+        import importlib.util
+        config_path = _root_dir / 'config.py'
+        if config_path.exists():
+            spec = importlib.util.spec_from_file_location("config", config_path)
+            config_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(config_module)
+            DB_PATH = config_module.DB_PATH
+        else:
+            raise ImportError(f"Não foi possível encontrar o módulo config. Procurando em: {_root_dir_str}")
+    finally:
+        try:
+            os.chdir(_old_cwd)
+        except:
+            pass
+
 from paginas.monitor import registrar_acesso  # Ajustado para incluir o caminho completo
 from texto_manager import get_texto
 

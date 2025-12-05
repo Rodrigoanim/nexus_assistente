@@ -1,5 +1,5 @@
 # resultados_01.py
-# Data: 21/11/2025
+# Data: 05/12/2025
 # Pagina de resultados e Analises - Dashboard.
 # Tabela: forms_resultados_01
 # Assessment: DISC Essencial
@@ -256,7 +256,7 @@ def call_dados(cursor, element, tabela_destino: str):
 
 def grafico_barra(cursor, element):
     """
-    Cria um gráfico de barras verticais com dados da tabela específica.
+    Cria um gráfico de pizza (pie/donut) com dados da tabela específica.
     
     Args:
         cursor: Cursor do banco de dados SQLite
@@ -271,13 +271,12 @@ def grafico_barra(cursor, element):
     
     Configurações do Gráfico:
         - Título do gráfico usando msg_element
-        - Barras verticais sem hover (tooltip)
+        - Gráfico de pizza (donut chart) com hole=0.3
         - Altura fixa de 400px
         - Largura responsiva
-        - Sem legenda e títulos dos eixos
-        - Fonte tamanho 14px
-        - Valores no eixo Y formatados com separador de milhar
-        - Cor das barras definida pela coluna 'section'
+        - Sem legenda (rótulos e percentuais no gráfico)
+        - Fonte tamanho 14px para rótulos
+        - Cores DISC definidas automaticamente
         - Sem barra de ferramentas do Plotly
     """
     try:
@@ -345,36 +344,27 @@ def grafico_barra(cursor, element):
                 '>{msg}</p>
             """, unsafe_allow_html=True)
         
-        # Cria o gráfico usando Graph Objects para controle total das cores
+        # Cria o gráfico de pizza usando Graph Objects para controle total das cores
         fig = go.Figure(data=[
-            go.Bar(
-                x=labels,
-                y=valores,
-                marker=dict(color=cores),  # Define cores diretamente
-                showlegend=False
+            go.Pie(
+                labels=labels,
+                values=valores,
+                marker=dict(colors=cores),  # Define cores diretamente
+                textinfo='label+percent',  # Mostra rótulo e percentual
+                textfont=dict(size=14),  # Tamanho da fonte dos rótulos
+                hole=0.3  # Cria um gráfico de rosca (donut chart) - pode ser 0 para pizza completa
             )
         ])
         
         # Configura o layout do gráfico
         fig.update_layout(
-            # Remove títulos dos eixos
-            xaxis_title=None,
-            yaxis_title=None,
-            # Remove legenda
+            # Remove legenda (os rótulos já aparecem no gráfico)
             showlegend=False,
             # Define dimensões
             height=400,
             width=None,  # largura responsiva
-            # Configuração do eixo X
-            xaxis=dict(
-                tickfont=dict(size=16),  # mantido tamanho original para web
-            ),
-            # Configuração do eixo Y
-            yaxis=dict(
-                tickfont=dict(size=18),  # mantido tamanho original para web
-                tickformat=",.",  # formato dos números
-                separatethousands=True  # separador de milhar
-            ),
+            # Centraliza o gráfico
+            margin=dict(l=20, r=20, t=20, b=20),
             # Desativa o hover (tooltip ao passar o mouse)
             hovermode=False
         )
@@ -585,29 +575,27 @@ def gerar_dados_grafico(cursor, elemento, tabela_escolhida: str, height_pct=100,
         # largura dos gráficos igual à tabela (usando width_pct)
         adj_width = int(base_width * 2.2 * 0.8 * (width_pct / 100)) + 20  # aumenta 20 na largura
         adj_height = int(base_height * (height_pct / 100)) - 25           # reduz 25 na altura
+        
+        # Aumentar tamanho do gráfico em 50% + 30% (total 95% maior) para PDF
+        adj_width = int(adj_width * 1.5 * 1.3)
+        adj_height = int(adj_height * 1.5 * 1.3)
+        
         fig = go.Figure(data=[
-            go.Bar(
-                x=labels,
-                y=valores,
-                marker=dict(color=cores),  # Define cores diretamente
-                showlegend=False
+            go.Pie(
+                labels=labels,
+                values=valores,
+                marker=dict(colors=cores),  # Define cores diretamente
+                textinfo='label+percent',  # Mostra rótulo e percentual
+                textfont=dict(size=14),  # Tamanho da fonte dos rótulos para PDF (aumentado proporcionalmente ao gráfico)
+                hole=0.3  # Cria um gráfico de rosca (donut chart) - pode ser 0 para pizza completa
             )
         ])
         fig.update_layout(
             showlegend=False,
-            height=int(adj_height * 1.5),  # aumentado 50% na altura
-            width=adj_width,
-            margin=dict(t=30, b=50),
-            xaxis=dict(
-                title=None,
-                tickfont=dict(size=8)  # reduzido 50% (de 16 para 8)
-            ),
-            yaxis=dict(
-                title=None,
-                tickfont=dict(size=9),  # reduzido 50% (de 18 para 9)
-                tickformat=",.",
-                separatethousands=True
-            )
+            height=adj_height,  # altura já ajustada com aumento de 95% (50% + 30%)
+            width=adj_width,   # largura já ajustada com aumento de 95% (50% + 30%)
+            margin=dict(t=30, b=50, l=20, r=20),
+            # Não precisa configurar eixos para gráfico de pizza
         )
         img_bytes = fig.to_image(format="png", scale=3)
         return {
@@ -1160,7 +1148,7 @@ def tabela_dados_sem_titulo(cursor, element):
 def analisar_perfil_disc_streamlit(cursor, user_id):
     """
     Gera análise comportamental DISC na interface Streamlit.
-    FUNÇÃO LIMPA - Pronta para novas regras e conteúdo.
+    
     """
     try:
         # 1. Buscar dados do usuário
@@ -1420,70 +1408,116 @@ def analisar_perfil_disc_streamlit(cursor, user_id):
         
         # ===== FIM DO PASSO 2 =====
 
-        # ===== PASSO 3: ANÁLISE DE PERFIL ÚNICO OU COMBINADO =====
+        # ===== PASSO 3: ANÁLISE DE PERFIL (ÚNICO, HÍBRIDO OU TRÍPLICE) - REGRA DOS 25 PONTOS =====
         
         st.markdown("---")
         st.markdown("### 🔍 Análise Comportamental Detalhada")
         
-        # Calcular diferença entre primário e secundário
-        if len(variaveis_hibridas) >= 2:
-            primario = variaveis_hibridas[0]
-            secundario = variaveis_hibridas[1]
-            diferenca = primario['valor_hibrido'] - secundario['valor_hibrido']
+        # REGRA DOS 25 PONTOS: Contar dimensões com valor híbrido >= 25
+        LIMITE_FORTE = 25.0
+        dimensoes_fortes = [v for v in variaveis_hibridas if v['valor_hibrido'] >= LIMITE_FORTE]
+        num_dimensoes_fortes = len(dimensoes_fortes)
+        
+        # Ordenar dimensões fortes por valor (maior para menor)
+        dimensoes_fortes_ordenadas = sorted(dimensoes_fortes, key=lambda x: x['valor_hibrido'], reverse=True)
+        
+        # Determinar tipo de perfil baseado no número de dimensões fortes
+        if num_dimensoes_fortes == 1:
+            # PERFIL ÚNICO: Apenas uma dimensão possui 25 pontos ou mais
+            tipo_perfil = "ÚNICO"
+            primario = dimensoes_fortes_ordenadas[0]
+            letra_primaria = primario['letra']
             
-            # Determinar tipo de perfil e arquivo correspondente
-            if diferenca > 10:
-                # PERFIL ÚNICO
-                tipo_perfil = "ÚNICO"
-                letra_primaria = primario['letra']
-                
-                # Mapear arquivo baseado no perfil primário
-                arquivos_unicos = {
-                    'D': 'Conteudo/01/1_D_Dominancia.md',
-                    'I': 'Conteudo/01/1_I_Influencia.md', 
-                    'S': 'Conteudo/01/1_S_Estabilidade.md',
-                    'C': 'Conteudo/01/1_C_Conformidade.md'
-                }
-                
-                arquivo_analise = arquivos_unicos.get(letra_primaria)
-                titulo_analise = f"Perfil {tipo_perfil}: {primario['dimensao']}"
-                
-            else:
-                # PERFIL COMBINADO
-                tipo_perfil = "COMBINADO"
-                letra_primaria = primario['letra']
-                letra_secundaria = secundario['letra']
-                combinacao = f"{letra_primaria}{letra_secundaria}"
-                
-                # Mapear arquivo baseado na combinação
-                arquivos_combinados = {
-                    'DC': 'Conteudo/01/21_DC_DOMINANCIA_CONFORMIDADE.md',
-                    'DI': 'Conteudo/01/22_DI_DOMINANCIA_INFLUENCIA.md',
-                    'ID': 'Conteudo/01/23_ID_INFLUENCIA_DOMINANCIA.md',
-                    'IS': 'Conteudo/01/24_IS_INFLUENCIA_ESTABILIDADE.md',
-                    'SI': 'Conteudo/01/25_SI_ESTABILIDADE_INFLUENCIA.md',
-                    'SC': 'Conteudo/01/26_SC_ESTABILIDADE_CONFORMIDADE.md',
-                    'CD': 'Conteudo/01/27_CD_CONFORMIDADE_DOMINANCIA.md',
-                    'CS': 'Conteudo/01/28_CS_CONFORMIDADE_ESTABILIDADE.md'
-                }
-                
-                arquivo_analise = arquivos_combinados.get(combinacao)
-                titulo_analise = f"Perfil {tipo_perfil}: {primario['dimensao']} + {secundario['dimensao']}"
+            # Mapear arquivo baseado no perfil primário
+            arquivos_unicos = {
+                'D': 'Conteudo/01/1_D_Dominancia.md',
+                'I': 'Conteudo/01/1_I_Influencia.md', 
+                'S': 'Conteudo/01/1_S_Estabilidade.md',
+                'C': 'Conteudo/01/1_C_Conformidade.md'
+            }
+            
+            arquivo_analise = arquivos_unicos.get(letra_primaria)
+            titulo_analise = f"Perfil {tipo_perfil}: {primario['dimensao']}"
+            
+        elif num_dimensoes_fortes == 2:
+            # PERFIL HÍBRIDO (DUPLO): Exatamente duas dimensões possuem 25 pontos ou mais
+            tipo_perfil = "HÍBRIDO"
+            primario = dimensoes_fortes_ordenadas[0]
+            secundario = dimensoes_fortes_ordenadas[1]
+            letra_primaria = primario['letra']
+            letra_secundaria = secundario['letra']
+            combinacao = f"{letra_primaria}{letra_secundaria}"
+            
+            # Mapear arquivo baseado na combinação
+            arquivos_combinados = {
+                'DC': 'Conteudo/01/21_DC_DOMINANCIA_CONFORMIDADE.md',
+                'DI': 'Conteudo/01/22_DI_DOMINANCIA_INFLUENCIA.md',
+                'ID': 'Conteudo/01/23_ID_INFLUENCIA_DOMINANCIA.md',
+                'IS': 'Conteudo/01/24_IS_INFLUENCIA_ESTABILIDADE.md',
+                'SI': 'Conteudo/01/25_SI_ESTABILIDADE_INFLUENCIA.md',
+                'SC': 'Conteudo/01/26_SC_ESTABILIDADE_CONFORMIDADE.md',
+                'CD': 'Conteudo/01/27_CD_CONFORMIDADE_DOMINANCIA.md',
+                'CS': 'Conteudo/01/28_CS_CONFORMIDADE_ESTABILIDADE.md',
+                'DS': 'Conteudo/01/29_DS_DOMINANCIA_ESTABILIDADE.md',
+                'SD': 'Conteudo/01/30_SD_ESTABILIDADE_DOMINANCIA.md',
+                'IC': 'Conteudo/01/31_IC_INFLUENCIA_CONFORMIDADE.md',
+                'CI': 'Conteudo/01/32_CI_CONFORMIDADE_INFLUENCIA.md'
+            }
+            
+            arquivo_analise = arquivos_combinados.get(combinacao)
+            titulo_analise = f"Perfil {tipo_perfil}: {primario['dimensao']} + {secundario['dimensao']}"
+            
+        elif num_dimensoes_fortes == 3:
+            # PERFIL TRÍPLICE: Três dimensões possuem 25 pontos ou mais
+            tipo_perfil = "TRÍPLICE"
+            primario = dimensoes_fortes_ordenadas[0]
+            secundario = dimensoes_fortes_ordenadas[1]
+            terciario = dimensoes_fortes_ordenadas[2]
+            letra_primaria = primario['letra']
+            letra_secundaria = secundario['letra']
+            letra_terciaria = terciario['letra']
+            
+            # Criar combinação tríplice ordenada (P₁P₂P₃)
+            combinacao_triplice = f"{letra_primaria}{letra_secundaria}{letra_terciaria}"
+            
+            # Mapear arquivo baseado na combinação tríplice
+            arquivos_triplices = {
+                'DSC': 'Conteudo/01/41_DSC_DOMINANCIA_ESTABILIDADE_CONFORMIDADE.md',
+                'DIS': 'Conteudo/01/42_DIS_DOMINANCIA_INFLUENCIA_ESTABILIDADE.md',
+                'ISC': 'Conteudo/01/43_ISC_INFLUENCIA_ESTABILIDADE_CONFORMIDADE.md',
+                'DIC': 'Conteudo/01/44_DIC_DOMINANCIA_INFLUENCIA_CONFORMIDADE.md'
+            }
+            
+            arquivo_analise = arquivos_triplices.get(combinacao_triplice)
+            titulo_analise = f"Perfil {tipo_perfil}: {primario['dimensao']} + {secundario['dimensao']} + {terciario['dimensao']}"
         else:
-            # Caso não haja dados suficientes para análise
+            # Caso não haja dimensões fortes ou dados insuficientes
             tipo_perfil = "INDETERMINADO"
-            diferenca = 0.0
             arquivo_analise = None
             titulo_analise = "Dados insuficientes para análise"
-            st.error("❌ **Dados insuficientes:** Não há variáveis híbridas suficientes para análise comportamental.")
-            
+            st.error("❌ **Dados insuficientes:** Não há dimensões com 25 pontos ou mais para análise comportamental.")
+        
         # Exibir informações do tipo de perfil
+        criterio_texto = ""
+        if tipo_perfil == "ÚNICO":
+            criterio_texto = "1 dimensão forte (≥ 25 pontos) = Perfil Único"
+        elif tipo_perfil == "HÍBRIDO":
+            criterio_texto = "2 dimensões fortes (≥ 25 pontos) = Perfil Híbrido"
+        elif tipo_perfil == "TRÍPLICE":
+            criterio_texto = "3 dimensões fortes (≥ 25 pontos) = Perfil Tríplice"
+        else:
+            criterio_texto = "Dados insuficientes"
+        
+        # Listar dimensões fortes para exibição
+        dimensoes_fortes_texto = ", ".join([f"{d['letra']} ({d['valor_hibrido']:.1f})" for d in dimensoes_fortes_ordenadas])
+        
         info_perfil_html = f"""
         <div style='background-color: #fff3cd; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #ffc107;'>
             <p style='margin: 0; font-size: 16px; color: #856404;'>
                     <strong>📊 Tipo de Perfil:</strong> {tipo_perfil}<br>
-                    <strong>📈 Diferença Primário-Secundário:</strong> {diferenca:.1f} pontos<br>
-                    <strong>📋 Critério:</strong> {'Diferença > 10 pontos = Perfil Único' if diferenca > 10 else 'Diferença ≤ 10 pontos = Perfil Combinado'}
+                    <strong>📈 Dimensões Fortes (≥ 25 pontos):</strong> {num_dimensoes_fortes}<br>
+                    <strong>📋 Dimensões:</strong> {dimensoes_fortes_texto if dimensoes_fortes_texto else 'Nenhuma'}<br>
+                    <strong>📋 Critério:</strong> {criterio_texto}
             </p>
         </div>
         """
@@ -1502,15 +1536,43 @@ def analisar_perfil_disc_streamlit(cursor, user_id):
                 st.markdown(conteudo_analise, unsafe_allow_html=True)
             
             except FileNotFoundError:
-                st.error(f"❌ **Arquivo não encontrado:** {arquivo_analise}")
-                st.error("Verifique se o arquivo existe na pasta 'Conteudo' do projeto.")
+                # Warning específico para perfis tríplices
+                if tipo_perfil == "TRÍPLICE":
+                    # Usar as dimensões fortes ordenadas
+                    if num_dimensoes_fortes >= 3:
+                        combinacao_triplice = f"{dimensoes_fortes_ordenadas[0]['letra']}{dimensoes_fortes_ordenadas[1]['letra']}{dimensoes_fortes_ordenadas[2]['letra']}"
+                    else:
+                        combinacao_triplice = "N/A"
+                    st.error("⚠️ **AVISO CRÍTICO PARA ADMINISTRADOR DA PLATAFORMA**")
+                    st.error(f"❌ **Arquivo de perfil tríplice não encontrado:** {arquivo_analise}")
+                    st.error(f"**Combinação detectada:** {combinacao_triplice}")
+                    st.error("**AÇÃO NECESSÁRIA:** Criar o arquivo de conteúdo para este perfil tríplice na pasta 'Conteudo/01/' do projeto.")
+                    st.error("**Impacto:** O usuário não receberá a análise completa do perfil tríplice até que o arquivo seja criado.")
+                else:
+                    st.error(f"❌ **Arquivo não encontrado:** {arquivo_analise}")
+                    st.error("Verifique se o arquivo existe na pasta 'Conteudo' do projeto.")
             
             except Exception as e:
                 st.error(f"❌ **Erro ao ler arquivo:** {str(e)}")
         else:
             # Combinação não encontrada
-            st.error("❌ **COMBINAÇÃO DE PERFIL INDEFINIDO - AVISAR O CONSULTOR DO PROJETO**")
-            st.error(f"Combinação não mapeada: {letra_primaria}/{letra_secundaria}")
+            if tipo_perfil == "TRÍPLICE":
+                # Usar as dimensões fortes ordenadas
+                if num_dimensoes_fortes >= 3:
+                    combinacao_triplice = f"{dimensoes_fortes_ordenadas[0]['letra']}{dimensoes_fortes_ordenadas[1]['letra']}{dimensoes_fortes_ordenadas[2]['letra']}"
+                else:
+                    combinacao_triplice = "N/A"
+                st.error("⚠️ **AVISO CRÍTICO PARA ADMINISTRADOR DA PLATAFORMA**")
+                st.error(f"❌ **PERFIL TRÍPLICE NÃO MAPEADO - AVISAR O ADMINISTRADOR**")
+                st.error(f"**Combinação tríplice detectada:** {combinacao_triplice}")
+                st.error("**AÇÃO NECESSÁRIA:** Adicionar mapeamento e criar arquivo de conteúdo para este perfil tríplice.")
+                st.error("**Impacto:** O usuário não receberá a análise completa do perfil tríplice até que seja implementado.")
+            elif tipo_perfil == "HÍBRIDO":
+                st.error("❌ **COMBINAÇÃO DE PERFIL HÍBRIDO INDEFINIDO - AVISAR O CONSULTOR DO PROJETO**")
+                if num_dimensoes_fortes >= 2:
+                    st.error(f"Combinação não mapeada: {dimensoes_fortes_ordenadas[0]['letra']}/{dimensoes_fortes_ordenadas[1]['letra']}")
+            else:
+                st.error("❌ **PERFIL INDEFINIDO - AVISAR O CONSULTOR DO PROJETO**")
         
         # ===== FIM DO PASSO 3 =====
 
@@ -1726,13 +1788,18 @@ def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
         if len(variaveis_hibridas) < 2:
             return "Análise não disponível: dados insuficientes para análise."
         
-        # Determinar tipo de perfil e arquivo correspondente
-        primario = variaveis_hibridas[0]
-        secundario = variaveis_hibridas[1]
-        diferenca = primario['valor_hibrido'] - secundario['valor_hibrido']
+        # REGRA DOS 25 PONTOS: Contar dimensões com valor híbrido >= 25
+        LIMITE_FORTE = 25.0
+        dimensoes_fortes = [v for v in variaveis_hibridas if v['valor_hibrido'] >= LIMITE_FORTE]
+        num_dimensoes_fortes = len(dimensoes_fortes)
         
-        if diferenca > 10:
-            # PERFIL ÚNICO
+        # Ordenar dimensões fortes por valor (maior para menor)
+        dimensoes_fortes_ordenadas = sorted(dimensoes_fortes, key=lambda x: x['valor_hibrido'], reverse=True)
+        
+        # Determinar tipo de perfil baseado no número de dimensões fortes
+        if num_dimensoes_fortes == 1:
+            # PERFIL ÚNICO: Apenas uma dimensão possui 25 pontos ou mais
+            primario = dimensoes_fortes_ordenadas[0]
             letra_primaria = primario['letra']
             arquivos_unicos = {
                 'D': 'Conteudo/01/1_D_Dominancia.md',
@@ -1742,8 +1809,10 @@ def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
             }
             arquivo_analise = arquivos_unicos.get(letra_primaria)
             titulo_analise = f"Perfil ÚNICO: {primario['dimensao']}"
-        else:
-            # PERFIL COMBINADO
+        elif num_dimensoes_fortes == 2:
+            # PERFIL HÍBRIDO (DUPLO): Exatamente duas dimensões possuem 25 pontos ou mais
+            primario = dimensoes_fortes_ordenadas[0]
+            secundario = dimensoes_fortes_ordenadas[1]
             letra_primaria = primario['letra']
             letra_secundaria = secundario['letra']
             combinacao = f"{letra_primaria}{letra_secundaria}"
@@ -1755,13 +1824,57 @@ def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
                 'SI': 'Conteudo/01/25_SI_ESTABILIDADE_INFLUENCIA.md',
                 'SC': 'Conteudo/01/26_SC_ESTABILIDADE_CONFORMIDADE.md',
                 'CD': 'Conteudo/01/27_CD_CONFORMIDADE_DOMINANCIA.md',
-                'CS': 'Conteudo/01/28_CS_CONFORMIDADE_ESTABILIDADE.md'
+                'CS': 'Conteudo/01/28_CS_CONFORMIDADE_ESTABILIDADE.md',
+                'DS': 'Conteudo/01/29_DS_DOMINANCIA_ESTABILIDADE.md',
+                'SD': 'Conteudo/01/30_SD_ESTABILIDADE_DOMINANCIA.md',
+                'IC': 'Conteudo/01/31_IC_INFLUENCIA_CONFORMIDADE.md',
+                'CI': 'Conteudo/01/32_CI_CONFORMIDADE_INFLUENCIA.md'
             }
             arquivo_analise = arquivos_combinados.get(combinacao)
-            titulo_analise = f"Perfil COMBINADO: {primario['dimensao']} + {secundario['dimensao']}"
+            titulo_analise = f"Perfil HÍBRIDO: {primario['dimensao']} + {secundario['dimensao']}"
+        elif num_dimensoes_fortes == 3:
+            # PERFIL TRÍPLICE: Três dimensões possuem 25 pontos ou mais
+            primario = dimensoes_fortes_ordenadas[0]
+            secundario = dimensoes_fortes_ordenadas[1]
+            terciario = dimensoes_fortes_ordenadas[2]
+            letra_primaria = primario['letra']
+            letra_secundaria = secundario['letra']
+            letra_terciaria = terciario['letra']
+            
+            # Criar combinação tríplice ordenada (P₁P₂P₃)
+            combinacao_triplice = f"{letra_primaria}{letra_secundaria}{letra_terciaria}"
+            
+            # Mapear arquivo baseado na combinação tríplice
+            arquivos_triplices = {
+                'DSC': 'Conteudo/01/41_DSC_DOMINANCIA_ESTABILIDADE_CONFORMIDADE.md',
+                'DIS': 'Conteudo/01/42_DIS_DOMINANCIA_INFLUENCIA_ESTABILIDADE.md',
+                'ISC': 'Conteudo/01/43_ISC_INFLUENCIA_ESTABILIDADE_CONFORMIDADE.md',
+                'DIC': 'Conteudo/01/44_DIC_DOMINANCIA_INFLUENCIA_CONFORMIDADE.md'
+            }
+            
+            arquivo_analise = arquivos_triplices.get(combinacao_triplice)
+            titulo_analise = f"Perfil TRÍPLICE: {primario['dimensao']} + {secundario['dimensao']} + {terciario['dimensao']}"
+        else:
+            # Caso não haja dimensões fortes ou dados insuficientes
+            return "Análise não disponível: nenhuma dimensão com 25 pontos ou mais encontrada."
         
         # Ler arquivo de análise
         if not arquivo_analise:
+            # Verificar se é perfil tríplice para mensagem específica
+            if num_dimensoes_fortes == 3:
+                combinacao_triplice = f"{dimensoes_fortes_ordenadas[0]['letra']}{dimensoes_fortes_ordenadas[1]['letra']}{dimensoes_fortes_ordenadas[2]['letra']}"
+                return f"""## ⚠️ AVISO CRÍTICO PARA ADMINISTRADOR DA PLATAFORMA
+
+### ❌ Perfil Tríplice Não Mapeado
+
+**Combinação tríplice detectada:** {combinacao_triplice}
+
+**AÇÃO NECESSÁRIA:** Adicionar mapeamento e criar arquivo de conteúdo para este perfil tríplice.
+
+**Impacto:** O usuário não receberá a análise completa do perfil tríplice até que seja implementado.
+
+**Arquivo esperado:** Conteudo/01/XX_{combinacao_triplice}_[NOME_DO_PERFIL].md
+"""
             return "Análise não disponível: perfil não mapeado."
         
         # Tentar diferentes caminhos possíveis para o arquivo
@@ -1782,6 +1895,24 @@ def analisar_perfil_disc(cursor, user_id, tabela_escolhida=None):
                 continue
         
         if not conteudo_analise:
+            # Verificar se é perfil tríplice para mensagem específica
+            if num_dimensoes_fortes == 3:
+                combinacao_triplice = f"{dimensoes_fortes_ordenadas[0]['letra']}{dimensoes_fortes_ordenadas[1]['letra']}{dimensoes_fortes_ordenadas[2]['letra']}"
+                return f"""## ⚠️ AVISO CRÍTICO PARA ADMINISTRADOR DA PLATAFORMA
+
+### ❌ Arquivo de Perfil Tríplice Não Encontrado
+
+**Arquivo esperado:** {arquivo_analise}
+
+**Combinação detectada:** {combinacao_triplice}
+
+**AÇÃO NECESSÁRIA:** Criar o arquivo de conteúdo para este perfil tríplice na pasta 'Conteudo/01/' do projeto.
+
+**Impacto:** O usuário não receberá a análise completa do perfil tríplice até que o arquivo seja criado.
+
+**Caminhos verificados:**
+{chr(10).join([f"- {caminho}" for caminho in caminhos_possiveis])}
+"""
             return f"Análise não disponível: arquivo {arquivo_analise} não encontrado."
 
         # Retornar análise formatada com título e conteúdo
