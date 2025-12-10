@@ -652,12 +652,12 @@ def subtitulo(titulo_pagina: str):
             st.markdown(f"""
                 <p style='
                     text-align: Left;
-                    font-size: 36px;
+                    font-size: 30px;
                     color: #000000;
-                    margin-top: 10px;
-                    margin-bottom: 30px;
+                    margin-top: 30px;
+                    margin-bottom: 15px;
                     font-family: sans-serif;
-                    font-weight: 500;
+                    font-weight: 50;
                 '>{titulo_pagina}</p>
             """, unsafe_allow_html=True)
         
@@ -753,9 +753,9 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                 ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 14),
+                ('FONTSIZE', (0, 0), (-1, 0), 16),  # Aumentado de 14 para 16
                 ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 1), (-1, -1), 12),
+                ('FONTSIZE', (0, 1), (-1, -1), 14),  # Aumentado de 12 para 14
                 ('BOTTOMPADDING', (0, 0), (-1, 0), 16),
                 ('TOPPADDING', (0, 1), (-1, -1), 12),
                 ('BOTTOMPADDING', (0, 1), (-1, -1), 12),
@@ -804,11 +804,80 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                 tabela_perfil = tabelas[0]
                 dados_tabela_perfil = gerar_dados_tabela(pdf_cursor, tabela_perfil, height_pct=100, width_pct=100)
                 if dados_tabela_perfil:
+                    # Estilo específico para tabela do perfil (30% menor, mesmo da tabela ranking)
+                    perfil_table_style = TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e8f5e9')),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 11),  # 16 * 0.7 = 11.2 ≈ 11
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('FONTSIZE', (0, 1), (-1, -1), 10),  # 14 * 0.7 = 9.8 ≈ 10
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('TOPPADDING', (0, 1), (-1, -1), 8),
+                        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('BOX', (0, 0), (-1, -1), 2, colors.black),
+                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f5f5f5')]),
+                        ('VALIGN', (0, 0), (-1, -1), 'TOP')  # Alinhamento vertical no topo
+                    ])
+                    
+                    # Estilo para texto da primeira coluna (permite quebra de linha)
+                    perfil_text_style = ParagraphStyle(
+                        'PerfilTextStyle',
+                        parent=styles['Normal'],
+                        fontSize=10,  # 30% menor que 14
+                        alignment=0,  # Alinhado à esquerda
+                        textColor=colors.HexColor('#1E1E1E'),
+                        fontName='Helvetica',
+                        leading=12,  # Espaçamento entre linhas
+                        spaceBefore=0,
+                        spaceAfter=0
+                    )
+                    
+                    # Estilo para valores (não precisa quebrar linha)
+                    perfil_value_style = ParagraphStyle(
+                        'PerfilValueStyle',
+                        parent=styles['Normal'],
+                        fontSize=10,
+                        alignment=2,  # Alinhado à direita
+                        textColor=colors.HexColor('#1E1E1E'),
+                        fontName='Helvetica',
+                        leading=12,
+                        spaceBefore=0,
+                        spaceAfter=0
+                    )
+                    
                     # Cria tabela com título "Resultados do Perfil"
                     elements.append(Paragraph("Resultados do Perfil", graphic_title_style))
                     elements.append(Spacer(1, 10))
-                    t = Table(dados_tabela_perfil['data'], colWidths=[table_width * 0.6, table_width * 0.4])
-                    t.setStyle(table_style)
+                    
+                    # Preparar dados da tabela com Paragraph para permitir quebra de linha
+                    dados_tabela_formatados = []
+                    
+                    # Cabeçalho
+                    dados_originais = dados_tabela_perfil['data']
+                    if dados_originais and len(dados_originais) > 0:
+                        # Primeira linha é o cabeçalho
+                        dados_tabela_formatados.append([
+                            Paragraph(dados_originais[0][0], perfil_text_style),
+                            Paragraph(dados_originais[0][1], perfil_value_style)
+                        ])
+                        
+                        # Demais linhas são os dados
+                        for linha in dados_originais[1:]:
+                            if len(linha) >= 2:
+                                # Usar Paragraph para permitir quebra de linha
+                                indicador_para = Paragraph(str(linha[0]), perfil_text_style)
+                                valor_para = Paragraph(str(linha[1]), perfil_value_style)
+                                dados_tabela_formatados.append([indicador_para, valor_para])
+                    
+                    # Criar tabela com larguras ajustadas (65% para primeira coluna, 35% para segunda)
+                    t = Table(dados_tabela_formatados, colWidths=[table_width * 0.65, table_width * 0.35])
+                    t.setStyle(perfil_table_style)
                     elements.append(Table([[t]], colWidths=[table_width], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
                     elements.append(Spacer(1, 20))
 
@@ -855,29 +924,29 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                     # Dividir em parágrafos e adicionar ao PDF
                     paragrafos = [p.strip() for p in texto_limpo.split('\n\n') if p.strip() and len(p.strip()) > 10]
                     
-                    # Estilos para diferentes níveis de texto
+                    # Estilos para diferentes níveis de texto (ajustados para ficar mais parecido com a tela)
                     analise_style = ParagraphStyle(
                         'AnaliseStyle',
                         parent=styles['Normal'],
-                        fontSize=10,
+                        fontSize=11,  # Aumentado de 10 para 11
                         alignment=0,  # Justificado à esquerda
                         textColor=colors.HexColor('#1E1E1E'),
                         fontName='Helvetica',
-                        leading=12,
-                        spaceBefore=6,
-                        spaceAfter=6
+                        leading=14,  # Aumentado de 12 para 14
+                        spaceBefore=8,  # Aumentado de 6 para 8
+                        spaceAfter=8  # Aumentado de 6 para 8
                     )
                     
                     titulo_secao_style = ParagraphStyle(
                         'TituloSecaoStyle',
                         parent=styles['Heading2'],
-                        fontSize=14,
+                        fontSize=16,  # Aumentado de 14 para 16
                         alignment=0,
                         textColor=colors.HexColor('#1E1E1E'),
                         fontName='Helvetica-Bold',
-                        leading=16,
-                        spaceBefore=12,
-                        spaceAfter=8
+                        leading=18,  # Aumentado de 16 para 18
+                        spaceBefore=14,  # Aumentado de 12 para 14
+                        spaceAfter=10  # Aumentado de 8 para 10
                     )
                     
                     for paragrafo in paragrafos:
@@ -907,7 +976,92 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                 print(f"Erro ao adicionar análise ao PDF: {str(e)}")
                 pass
 
-            # 6. ADICIONAR RELATÓRIO DETALHADO DAS ARMADILHAS
+            # 6. ADICIONAR RANKING DAS ARMADILHAS
+            try:
+                # Obter dados do ranking
+                dados_ranking = obter_dados_ranking_pdf(pdf_cursor, user_id, tabela_escolhida)
+                
+                if dados_ranking:
+                    # Estilo específico para tabela do ranking (30% menor)
+                    ranking_table_style = TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e8f5e9')),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 11),  # 16 * 0.7 = 11.2 ≈ 11
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('FONTSIZE', (0, 1), (-1, -1), 10),  # 14 * 0.7 = 9.8 ≈ 10
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('TOPPADDING', (0, 1), (-1, -1), 8),
+                        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('BOX', (0, 0), (-1, -1), 2, colors.black),
+                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f5f5f5')]),
+                        ('VALIGN', (0, 0), (-1, -1), 'TOP')  # Alinhamento vertical no topo
+                    ])
+                    
+                    # Estilo para texto da coluna Armadilhas (permite quebra de linha)
+                    ranking_text_style = ParagraphStyle(
+                        'RankingTextStyle',
+                        parent=styles['Normal'],
+                        fontSize=10,  # 30% menor que 14
+                        alignment=0,  # Alinhado à esquerda
+                        textColor=colors.HexColor('#1E1E1E'),
+                        fontName='Helvetica',
+                        leading=12,  # Espaçamento entre linhas
+                        spaceBefore=0,
+                        spaceAfter=0
+                    )
+                    
+                    # Estilo para valores (não precisa quebrar linha)
+                    ranking_value_style = ParagraphStyle(
+                        'RankingValueStyle',
+                        parent=styles['Normal'],
+                        fontSize=10,
+                        alignment=2,  # Alinhado à direita
+                        textColor=colors.HexColor('#1E1E1E'),
+                        fontName='Helvetica',
+                        leading=12,
+                        spaceBefore=0,
+                        spaceAfter=0
+                    )
+                    
+                    # Adicionar título do ranking
+                    elements.append(Spacer(1, 20))
+                    elements.append(Paragraph("Ranking das Armadilhas", graphic_title_style))
+                    elements.append(Spacer(1, 10))
+                    
+                    # Preparar dados da tabela com Paragraph para permitir quebra de linha
+                    dados_tabela_ranking = []
+                    
+                    # Cabeçalho
+                    dados_tabela_ranking.append([
+                        Paragraph("Armadilhas", ranking_text_style),
+                        Paragraph("Valor", ranking_value_style)
+                    ])
+                    
+                    # Dados com quebra de linha automática para nomes longos
+                    for armadilha, valor in dados_ranking:
+                        # Usar Paragraph para permitir quebra de linha
+                        # Limitar largura aproximada para forçar quebra (ajustar conforme necessário)
+                        armadilha_para = Paragraph(armadilha, ranking_text_style)
+                        valor_para = Paragraph(valor, ranking_value_style)
+                        dados_tabela_ranking.append([armadilha_para, valor_para])
+                    
+                    # Criar tabela do ranking com larguras ajustadas
+                    # Aumentar proporção da coluna Armadilhas para 65% e reduzir Valor para 35%
+                    t_ranking = Table(dados_tabela_ranking, colWidths=[table_width * 0.65, table_width * 0.35])
+                    t_ranking.setStyle(ranking_table_style)
+                    elements.append(Table([[t_ranking]], colWidths=[table_width], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
+                    elements.append(Spacer(1, 20))
+            except Exception as e:
+                print(f"Erro ao adicionar ranking ao PDF: {str(e)}")
+                pass
+
+            # 7. ADICIONAR RELATÓRIO DETALHADO DAS ARMADILHAS
             try:
                 # Obter as 3 primeiras armadilhas do ranking
                 top_3_armadilhas = obter_top_3_armadilhas_pdf(pdf_cursor, user_id, tabela_escolhida)
@@ -918,17 +1072,30 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                     elements.append(Paragraph("Relatório Detalhado das Armadilhas", title_style))
                     elements.append(Spacer(1, 20))
                     
-                    # Estilos para o relatório
+                    # Estilos para o relatório (ajustados para ficar mais parecido com a tela)
                     relatorio_style = ParagraphStyle(
                         'RelatorioStyle',
                         parent=styles['Normal'],
-                        fontSize=10,
+                        fontSize=11,  # Aumentado de 10 para 11
                         alignment=0,
                         textColor=colors.HexColor('#1E1E1E'),
                         fontName='Helvetica',
-                        leading=12,
-                        spaceBefore=6,
-                        spaceAfter=6
+                        leading=14,  # Aumentado de 12 para 14
+                        spaceBefore=8,  # Aumentado de 6 para 8
+                        spaceAfter=8  # Aumentado de 6 para 8
+                    )
+                    
+                    # Estilo para títulos de seção no relatório
+                    titulo_relatorio_style = ParagraphStyle(
+                        'TituloRelatorioStyle',
+                        parent=styles['Heading2'],
+                        fontSize=16,  # Aumentado para ficar mais visível
+                        alignment=0,
+                        textColor=colors.HexColor('#1E1E1E'),
+                        fontName='Helvetica-Bold',
+                        leading=18,
+                        spaceBefore=16,
+                        spaceAfter=10
                     )
                     
                     # 1. Adicionar arquivo 00_abertura.md
@@ -940,12 +1107,8 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                         with open(arquivo_abertura, 'r', encoding='utf-8') as file:
                             conteudo_abertura = file.read()
                         
-                        # Processar markdown para PDF
-                        paragrafos_abertura = processar_markdown_para_pdf(conteudo_abertura)
-                        for paragrafo in paragrafos_abertura:
-                            if paragrafo.strip():
-                                elements.append(Paragraph(paragrafo.strip(), relatorio_style))
-                                elements.append(Spacer(1, 6))
+                        # Processar markdown para PDF com identificação de títulos
+                        processar_e_adicionar_markdown_pdf(conteudo_abertura, elements, relatorio_style, titulo_relatorio_style)
                     
                     # 2. Adicionar arquivos das 3 armadilhas
                     for nome_armadilha in top_3_armadilhas:
@@ -960,12 +1123,8 @@ def generate_pdf_content(cursor, user_id: int, tabela_escolhida: str):
                                     with open(caminho_arquivo, 'r', encoding='utf-8') as file:
                                         conteudo_armadilha = file.read()
                                     
-                                    # Processar markdown para PDF
-                                    paragrafos_armadilha = processar_markdown_para_pdf(conteudo_armadilha)
-                                    for paragrafo in paragrafos_armadilha:
-                                        if paragrafo.strip():
-                                            elements.append(Paragraph(paragrafo.strip(), relatorio_style))
-                                            elements.append(Spacer(1, 6))
+                                    # Processar markdown para PDF com identificação de títulos
+                                    processar_e_adicionar_markdown_pdf(conteudo_armadilha, elements, relatorio_style, titulo_relatorio_style)
             except Exception as e:
                 # Se houver erro, continua sem o relatório detalhado
                 print(f"Erro ao adicionar relatório detalhado ao PDF: {str(e)}")
@@ -1313,6 +1472,72 @@ def exibir_ranking_armadilhas(cursor, user_id):
         # Se houver erro, não exibe nada (não quebra o fluxo)
         return None
 
+def obter_dados_ranking_pdf(cursor, user_id, tabela_escolhida):
+    """
+    Obtém os dados do ranking das armadilhas ordenados para uso no PDF.
+    Retorna lista de tuplas (armadilha, valor_formatado) ordenadas por valor decrescente.
+    """
+    try:
+        # Buscar a primeira tabela do tipo 'tabela'
+        cursor.execute(f"""
+            SELECT select_element, str_element
+            FROM {tabela_escolhida}
+            WHERE type_element = 'tabela'
+            AND user_id = ?
+            ORDER BY e_row, e_col
+            LIMIT 1
+        """, (user_id,))
+        
+        tabela_element = cursor.fetchone()
+        
+        if not tabela_element:
+            return None
+        
+        select = tabela_element[0]      # select_element
+        rotulos = tabela_element[1]    # str_element
+        
+        if not select or not rotulos:
+            return None
+        
+        type_names = select.split('|')
+        rotulos_list = rotulos.split('|')
+        
+        if len(type_names) != len(rotulos_list):
+            return None
+        
+        # Lista para armazenar os dados
+        dados_armadilhas = []
+        
+        for i, type_name in enumerate(type_names):
+            cursor.execute(f"""
+                SELECT value_element 
+                FROM {tabela_escolhida}
+                WHERE name_element = ? 
+                AND user_id = ?
+                ORDER BY ID_element DESC
+                LIMIT 1
+            """, (type_name.strip(), user_id))
+            
+            result = cursor.fetchone()
+            valor_numerico = float(result[0]) if result and result[0] is not None else 0.0
+            valor_formatado = format_br_integer(result[0]) if result and result[0] is not None else '0'
+            
+            dados_armadilhas.append({
+                'Armadilhas': rotulos_list[i].strip(),
+                'Valor_Numerico': valor_numerico,
+                'Valor': valor_formatado
+            })
+        
+        # Ordenar por valor numérico (decrescente)
+        df = pd.DataFrame(dados_armadilhas)
+        df_ordenado = df.sort_values('Valor_Numerico', ascending=False)
+        
+        # Retornar lista de tuplas (armadilha, valor)
+        return [(row['Armadilhas'], row['Valor']) for _, row in df_ordenado.iterrows()]
+        
+    except Exception as e:
+        return None
+
 def obter_top_3_armadilhas_pdf(cursor, user_id, tabela_escolhida):
     """
     Obtém as 3 primeiras armadilhas do ranking para uso no PDF.
@@ -1397,6 +1622,122 @@ def processar_markdown_para_pdf(conteudo_markdown):
         return paragrafos
     except Exception as e:
         return [conteudo_markdown]  # Retorna o conteúdo original em caso de erro
+
+def processar_e_adicionar_markdown_pdf(conteudo_markdown, elements, estilo_paragrafo, estilo_titulo):
+    """
+    Processa conteúdo markdown e adiciona diretamente aos elements do PDF,
+    identificando títulos (##) e aplicando estilos apropriados.
+    Remove asteriscos duplos (**) e converte para formatação adequada.
+    """
+    try:
+        # Remove tags HTML primeiro
+        texto_limpo = re.sub(r'<[^>]+>', '', conteudo_markdown)
+        # Normaliza quebras de linha
+        texto_limpo = re.sub(r'\n{3,}', '\n\n', texto_limpo)
+        texto_limpo = texto_limpo.strip()
+        
+        # Dividir em linhas para processar
+        linhas = texto_limpo.split('\n')
+        
+        for linha in linhas:
+            linha_original = linha
+            linha = linha.strip()
+            if not linha:
+                elements.append(Spacer(1, 4))  # Espaço para linhas vazias
+                continue
+            
+            # Verificar se é um título markdown (###, ##, #)
+            if linha.startswith('###'):
+                # Título nível 3
+                titulo_limpo = re.sub(r'^###+\s*', '', linha).strip()
+                # Remover asteriscos duplos (**texto**) mantendo o texto
+                titulo_limpo = re.sub(r'\*\*([^*]+)\*\*', r'\1', titulo_limpo)
+                # Remover asteriscos simples (*texto*) mantendo o texto
+                titulo_limpo = re.sub(r'(?<!\*)\*([^*]+)\*(?!\*)', r'\1', titulo_limpo)
+                if titulo_limpo:
+                    elements.append(Paragraph(titulo_limpo, estilo_titulo))
+                    elements.append(Spacer(1, 8))
+            elif linha.startswith('##'):
+                # Título nível 2
+                titulo_limpo = re.sub(r'^##+\s*', '', linha).strip()
+                # Remover asteriscos duplos (**texto**)
+                titulo_limpo = re.sub(r'\*\*([^*]+)\*\*', r'\1', titulo_limpo)
+                # Remover asteriscos simples (*texto*)
+                titulo_limpo = re.sub(r'(?<!\*)\*([^*]+)\*(?!\*)', r'\1', titulo_limpo)
+                if titulo_limpo:
+                    elements.append(Paragraph(titulo_limpo, estilo_titulo))
+                    elements.append(Spacer(1, 8))
+            elif linha.startswith('#'):
+                # Título nível 1
+                titulo_limpo = re.sub(r'^#+\s*', '', linha).strip()
+                # Remover asteriscos duplos (**texto**)
+                titulo_limpo = re.sub(r'\*\*([^*]+)\*\*', r'\1', titulo_limpo)
+                # Remover asteriscos simples (*texto*)
+                titulo_limpo = re.sub(r'(?<!\*)\*([^*]+)\*(?!\*)', r'\1', titulo_limpo)
+                if titulo_limpo:
+                    elements.append(Paragraph(titulo_limpo, estilo_titulo))
+                    elements.append(Spacer(1, 8))
+            else:
+                # É um parágrafo normal ou item de lista
+                linha_processada = linha
+                
+                # Processar item de lista (começa com * ou -)
+                if linha.startswith('* ') or linha.startswith('- '):
+                    # Remover o marcador de lista, mas manter o espaço
+                    linha_processada = re.sub(r'^[\*\-\+]\s+', '', linha_processada)
+                
+                # Converter **texto** para <b>texto</b> (negrito)
+                # Usar substituição global para pegar todos os casos
+                linha_processada = re.sub(r'\*\*([^*]+?)\*\*', r'<b>\1</b>', linha_processada)
+                
+                # Converter *texto* para <i>texto</i> (itálico) apenas se não for parte de **
+                # Mas só se não estiver dentro de tags <b> já criadas
+                # Processar apenas asteriscos simples que não estão dentro de <b></b>
+                def processar_italico(texto):
+                    # Dividir por tags <b></b> para não processar dentro delas
+                    partes = re.split(r'(<b>.*?</b>)', texto)
+                    resultado = []
+                    for parte in partes:
+                        if parte.startswith('<b>') and parte.endswith('</b>'):
+                            # É uma tag de negrito, manter como está
+                            resultado.append(parte)
+                        else:
+                            # Processar itálico nesta parte
+                            parte_processada = re.sub(r'(?<!\*)\*([^*]+?)\*(?!\*)', r'<i>\1</i>', parte)
+                            resultado.append(parte_processada)
+                    return ''.join(resultado)
+                
+                linha_processada = processar_italico(linha_processada)
+                
+                # NÃO remover nenhum caractere - deixar o ReportLab processar
+                # O ReportLab Paragraph aceita caracteres Unicode, então não precisa limpar
+                
+                if linha_processada.strip():
+                    # Limitar tamanho do parágrafo
+                    if len(linha_processada) > 800:
+                        # Dividir parágrafos muito longos
+                        frases = re.split(r'([.!?]\s+)', linha_processada)
+                        frase_atual = ''
+                        for parte in frases:
+                            frase_atual += parte
+                            if parte.strip().endswith(('.', '!', '?')):
+                                if frase_atual.strip():
+                                    elements.append(Paragraph(frase_atual.strip(), estilo_paragrafo))
+                                    elements.append(Spacer(1, 4))
+                                frase_atual = ''
+                        if frase_atual.strip():
+                            elements.append(Paragraph(frase_atual.strip(), estilo_paragrafo))
+                            elements.append(Spacer(1, 4))
+                    else:
+                        elements.append(Paragraph(linha_processada.strip(), estilo_paragrafo))
+                        elements.append(Spacer(1, 6))
+    except Exception as e:
+        # Em caso de erro, adiciona o conteúdo original processado de forma simples
+        try:
+            conteudo_simples = re.sub(r'\*\*([^*]+)\*\*', r'\1', conteudo_markdown[:500])
+            elements.append(Paragraph(conteudo_simples, estilo_paragrafo))
+        except:
+            elements.append(Paragraph("Erro ao processar conteúdo", estilo_paragrafo))
 
 def mapear_armadilha_para_arquivo(nome_armadilha):
     """
